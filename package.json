@@ -2,9 +2,9 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "next start --webpack",
     "clean-pwa": "rm -rf .next public/sw.js public/workbox-*.js",
     "pwa-dev": "npm run clean-pwa && npm run build && npm run start"
   },

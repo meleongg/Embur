@@ -789,6 +789,13 @@ export default function WorkoutSession() {
       const toastId = toast.loading("Updating workout...");
       let updateCount = 0;
 
+      // Step 0: Build the desired exercise order from sessionExercises
+      // Map exercise IDs to their display order in the session
+      const sessionOrderMap = new Map<string, number>();
+      sessionExercises.forEach((exercise, index) => {
+        sessionOrderMap.set(exercise.id, index);
+      });
+
       // 1. Handle NEW exercises to add to the workout
       const exercisesToAdd = Object.entries(newExercisesToAdd)
         .filter(([_, data]) => data.selected)
@@ -798,17 +805,10 @@ export default function WorkoutSession() {
         }));
 
       if (exercisesToAdd.length > 0) {
-        // Get the current max exercise_order
-        const { data: existingOrders } = await supabase
-          .from("workout_exercises")
-          .select("exercise_order")
-          .eq("workout_id", workoutId)
-          .order("exercise_order", { ascending: false })
-          .limit(1);
-
-        let nextOrder = (existingOrders?.[0]?.exercise_order ?? -1) + 1;
-
         for (const exercise of exercisesToAdd) {
+          const exerciseOrder =
+            sessionOrderMap.get(exercise.exercise_id) ?? 999;
+
           const { error: insertError } = await supabase
             .from("workout_exercises")
             .insert({
@@ -817,7 +817,7 @@ export default function WorkoutSession() {
               sets: exercise.sets,
               reps: exercise.reps,
               weight: exercise.weight,
-              exercise_order: nextOrder++,
+              exercise_order: exerciseOrder,
             });
 
           if (insertError) {
@@ -865,14 +865,18 @@ export default function WorkoutSession() {
         }));
 
       if (selectedUpdates.length > 0) {
-        // Update each workout exercise
+        // Update each workout exercise (including order)
         for (const update of selectedUpdates) {
+          // Get the order from sessionOrderMap
+          const exerciseOrder = sessionOrderMap.get(update.exercise_id) ?? 999;
+
           await supabase
             .from("workout_exercises")
             .update({
               sets: update.sets,
               reps: update.reps,
               weight: update.weight,
+              exercise_order: exerciseOrder,
             })
             .eq("workout_id", update.workout_id)
             .eq("exercise_id", update.exercise_id);
