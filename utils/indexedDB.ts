@@ -1,23 +1,7 @@
 import { openDB } from "idb";
 
 const DB_NAME = "FitFlash-offline";
-const DB_VERSION = 2; // Increment version to add new store
-
-export interface OfflineWorkoutSession {
-  id?: number;
-  workout_id: string;
-  started_at: string;
-  ended_at: string;
-  exercises: Array<{
-    exercise_id: string;
-    sets: Array<{
-      reps: number;
-      weight: number;
-      completed: boolean;
-    }>;
-  }>;
-  synced: boolean;
-}
+const DB_VERSION = 2;
 
 export interface ActiveSessionState {
   id: string; // user_id
@@ -43,38 +27,13 @@ export interface ActiveSessionState {
 export const db = {
   async init() {
     return openDB(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion) {
-        // Store for offline sessions (completed workouts)
-        if (!db.objectStoreNames.contains("workoutSessions")) {
-          const store = db.createObjectStore("workoutSessions", {
-            keyPath: "id",
-            autoIncrement: true,
-          });
-          store.createIndex("synced", "synced");
-        }
-
+      upgrade(db) {
         // Store for active session state (in-progress workouts)
         if (!db.objectStoreNames.contains("activeSession")) {
           db.createObjectStore("activeSession", { keyPath: "id" });
         }
       },
     });
-  },
-
-  // the Omit<OfflineWorkoutSession, "id" | "synced"> type utility is used to create a type that excludes the id and synced fields (makes them optional)
-  async saveWorkoutSession(
-    session: Omit<OfflineWorkoutSession, "id" | "synced">,
-  ) {
-    const db = await this.init();
-    return db.add("workoutSessions", {
-      ...session,
-      synced: false,
-    });
-  },
-
-  async getUnsyncedSessions() {
-    const db = await this.init();
-    return db.getAllFromIndex("workoutSessions", "synced", 0);
   },
 
   async saveActiveSession(session: ActiveSessionState) {

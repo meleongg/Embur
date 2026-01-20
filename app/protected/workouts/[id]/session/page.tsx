@@ -4,7 +4,6 @@ import BackButton from "@/components/ui/back-button";
 import PageTitle from "@/components/ui/page-title";
 import SessionDuration from "@/components/ui/session-duration";
 import { useSession } from "@/contexts/SessionContext";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useUnitPreference } from "@/hooks/useUnitPreference";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -50,7 +49,6 @@ import {
   Plus,
   Search,
   Trash2,
-  WifiOff,
   X,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
@@ -194,8 +192,6 @@ export default function WorkoutSession() {
   const [sessionExercises, setSessionExercises] = useState<SessionExercise[]>(
     [],
   );
-
-  const isOnline = useOnlineStatus();
 
   const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
 
@@ -1376,18 +1372,6 @@ export default function WorkoutSession() {
               </div>
             </div>
           </div>
-
-          {!isOnline && (
-            <div className="bg-yellow-100 text-yellow-800 p-4 rounded-lg mb-6 border border-yellow-200">
-              <div className="flex items-center gap-2">
-                <WifiOff className="h-5 w-5" />
-                <p className="font-medium">
-                  You're offline. Your workout will be saved locally and synced
-                  when back online.
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Exercise cards */}
           {sessionExercises.length === 0 ? (
