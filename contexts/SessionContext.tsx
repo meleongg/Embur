@@ -1,5 +1,6 @@
 "use client";
 
+import { db } from "@/utils/indexedDB";
 import {
   createContext,
   ReactNode,
@@ -35,6 +36,7 @@ interface ActiveSession {
 
 interface SessionContextProps {
   activeSession: ActiveSession | null;
+  isHydrated: boolean;
   startSession: (workout: {
     user_id: string;
     workout_id: string;
@@ -51,47 +53,92 @@ interface SessionContextProps {
 }
 
 const SessionContext = createContext<SessionContextProps | undefined>(
-  undefined
+  undefined,
 );
 
 export const SESSION_STORAGE_KEY = "FitFlash-active-session";
 
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(
-    null
+    null,
   );
   const [isEnding, setIsEnding] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const endTimeRef = useRef<number | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load from localStorage on mount only
+  // Load session from IndexedDB first, then localStorage as fallback
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    try {
-      const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
-      if (savedSession) {
-        const parsedSession = JSON.parse(savedSession);
-        if (
-          parsedSession &&
-          parsedSession.workoutId &&
-          parsedSession.workoutName &&
-          parsedSession.startTime
-        ) {
-          // Ensure startTime is a valid date string
-          const validDate = validateStartTime(parsedSession.startTime);
-          setActiveSession({
-            ...parsedSession,
-            startTime: validDate, // Ensure valid date format
-          });
-        } else {
-          // Invalid data, clear it
-          localStorage.removeItem(SESSION_STORAGE_KEY);
+    const loadSession = async () => {
+      try {
+        // Try IndexedDB first (most reliable for PWAs)
+        const idbSession = await db.getActiveSession();
+
+        if (idbSession) {
+          const session: ActiveSession = {
+            id: idbSession.id,
+            workoutId: idbSession.workoutId,
+            workoutName: idbSession.workoutName,
+            startTime: validateStartTime(idbSession.startTime),
+            progress: {
+              exercises: idbSession.exercises,
+            },
+          };
+          setActiveSession(session);
+
+          // Update localStorage cache
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+          setIsHydrated(true);
+          return;
         }
+
+        // Fallback to localStorage
+        const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
+        if (savedSession) {
+          console.log(
+            "⚠️ Loaded session from localStorage (IndexedDB was empty)",
+          );
+          const parsedSession = JSON.parse(savedSession);
+          if (
+            parsedSession &&
+            parsedSession.workoutId &&
+            parsedSession.workoutName &&
+            parsedSession.startTime
+          ) {
+            const validDate = validateStartTime(parsedSession.startTime);
+            const session = {
+              ...parsedSession,
+              startTime: validDate,
+            };
+            setActiveSession(session);
+
+            // Sync to IndexedDB for future reliability
+            if (session.progress?.exercises) {
+              await db.saveActiveSession({
+                id: "active",
+                workoutId: session.workoutId,
+                workoutName: session.workoutName,
+                startTime: session.startTime,
+                lastUpdated: new Date().toISOString(),
+                exercises: session.progress.exercises,
+              });
+            }
+          } else {
+            localStorage.removeItem(SESSION_STORAGE_KEY);
+          }
+        }
+      } catch (e) {
+        console.error("❌ Error loading session:", e);
+        // Clear potentially corrupted data
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      } finally {
+        setIsHydrated(true);
       }
-    } catch (e) {
-      console.error("Error loading session:", e);
-      localStorage.removeItem(SESSION_STORAGE_KEY);
-    }
+    };
+
+    loadSession();
   }, []);
 
   // Listen for storage events to handle changes from other tabs
@@ -106,7 +153,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
           if (parsedSession && parsedSession.startTime) {
             // Ensure we have a valid date when loading from other tabs
             parsedSession.startTime = validateStartTime(
-              parsedSession.startTime
+              parsedSession.startTime,
             );
             setActiveSession(parsedSession);
           } else {
@@ -124,6 +171,67 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // CRITICAL: Save immediately when app goes to background (PWA suspend)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleVisibilityChange = async () => {
+      if (document.hidden && activeSession) {
+        // App is going to background - save immediately
+
+        // Clear debounce and save immediately
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Force immediate save to IndexedDB
+        if (activeSession.progress?.exercises) {
+          await db.saveActiveSession({
+            id: "active",
+            workoutId: activeSession.workoutId,
+            workoutName: activeSession.workoutName,
+            startTime: activeSession.startTime,
+            lastUpdated: new Date().toISOString(),
+            exercises: activeSession.progress.exercises,
+          });
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Also save on beforeunload (when closing/refreshing)
+    const handleBeforeUnload = async () => {
+      if (activeSession?.progress?.exercises) {
+        // Use sendBeacon for guaranteed delivery even as page closes
+        await db.saveActiveSession({
+          id: "active",
+          workoutId: activeSession.workoutId,
+          workoutName: activeSession.workoutName,
+          startTime: activeSession.startTime,
+          lastUpdated: new Date().toISOString(),
+          exercises: activeSession.progress.exercises,
+        });
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [activeSession]);
 
   // Enhanced date validation
   const validateStartTime = (timestamp: string): string => {
@@ -188,8 +296,36 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     // Update state first
     setActiveSession(newSession);
 
-    // Then persist to localStorage
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(newSession));
+    // Persist to both storages (IndexedDB is primary, localStorage is cache)
+    persistSession(newSession);
+  };
+
+  // Debounced save to IndexedDB and localStorage
+  const persistSession = async (session: ActiveSession) => {
+    try {
+      // Save to localStorage immediately (fast cache)
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+
+      // Debounce IndexedDB saves to avoid excessive writes
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      saveTimeoutRef.current = setTimeout(async () => {
+        if (session.progress?.exercises) {
+          const success = await db.saveActiveSession({
+            id: "active",
+            workoutId: session.workoutId,
+            workoutName: session.workoutName,
+            startTime: session.startTime,
+            lastUpdated: new Date().toISOString(),
+            exercises: session.progress.exercises,
+          });
+        }
+      }, 500); // 500ms debounce
+    } catch (error) {
+      console.error("Failed to persist session:", error);
+    }
   };
 
   const updateSessionProgress = (exercises: SessionExercise[]) => {
@@ -206,8 +342,8 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     // Update state first
     setActiveSession(updatedSession);
 
-    // Then persist to localStorage
-    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(updatedSession));
+    // Persist to both storages
+    persistSession(updatedSession);
   };
 
   // Calculate elapsed time in minutes
@@ -222,18 +358,25 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Update the endSession function to be more thorough
-  const endSession = () => {
+  const endSession = async () => {
     // Set cooldown flag
     setIsEnding(true);
     endTimeRef.current = Date.now();
+
+    // Clear any pending saves
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
 
     // Clear React state
     setActiveSession(null);
 
     if (typeof window !== "undefined") {
       try {
-        // Clear localStorage
+        // Clear both storages
         localStorage.removeItem(SESSION_STORAGE_KEY);
+        await db.clearActiveSession();
+        console.log("🧹 Session cleared from both storages");
 
         // Reset cooldown flag after 5 seconds
         setTimeout(() => {
@@ -272,11 +415,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     <SessionContext.Provider
       value={{
         activeSession,
+        isHydrated,
         startSession,
         updateSessionProgress,
         endSession,
         getElapsedMinutes,
-        formatSessionDate, // Add this to your context value
+        formatSessionDate,
       }}
     >
       {children}

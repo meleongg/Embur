@@ -77,7 +77,7 @@ const getWorkoutExercises = async (supabase: any, workoutId: string) => {
       `
       *,
       exercise:exercises(*)
-    `
+    `,
     )
     .eq("workout_id", workoutId)
     .order("exercise_order", { ascending: true }); // Add this line to ensure correct order
@@ -140,11 +140,10 @@ export default function WorkoutSession() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number>();
 
-  const [submitted, setSubmitted] = useState<any>(null);
   // Add your new state variables here, before any useEffects or other logic
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUpdateWorkoutModal, setShowUpdateWorkoutModal] = useState(false);
@@ -193,7 +192,7 @@ export default function WorkoutSession() {
   } = useDisclosure();
 
   const [sessionExercises, setSessionExercises] = useState<SessionExercise[]>(
-    []
+    [],
   );
 
   const isOnline = useOnlineStatus();
@@ -213,7 +212,7 @@ export default function WorkoutSession() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const [customExerciseError, setCustomExerciseError] = useState<string | null>(
-    null
+    null,
   );
 
   // Add these state variables with your other useDisclosure hooks
@@ -227,6 +226,9 @@ export default function WorkoutSession() {
   const [editingWeights, setEditingWeights] = useState<{
     [key: string]: string;
   }>({});
+
+  // Track if we've already shown the recovery toast
+  const hasShownRecoveryToast = useRef(false);
 
   // Add these state variables to track loading states
   const [addingExercise, setAddingExercise] = useState<string | null>(null);
@@ -298,6 +300,29 @@ export default function WorkoutSession() {
       });
     } else if (activeSession) {
       setSessionStartTime(activeSession.startTime);
+
+      // Check if this is a recovered session with existing progress
+      if (
+        activeSession.progress?.exercises &&
+        activeSession.progress.exercises.length > 0 &&
+        !hasShownRecoveryToast.current
+      ) {
+        const completedSets = activeSession.progress.exercises.reduce(
+          (total, ex) =>
+            total + ex.actualSets.filter((s) => s.completed).length,
+          0,
+        );
+
+        if (completedSets > 0) {
+          toast.success(
+            `Session recovered! ${completedSets} completed set${completedSets !== 1 ? "s" : ""} restored.`,
+            {
+              duration: 4000,
+            },
+          );
+          hasShownRecoveryToast.current = true;
+        }
+      }
     }
   }, [workout, user, activeSession, workoutId, startSession]);
 
@@ -305,7 +330,7 @@ export default function WorkoutSession() {
   const fetchExercises = async (
     page: number,
     query: string = "",
-    categoryId: string = "all"
+    categoryId: string = "all",
   ) => {
     let exerciseQuery = supabase
       .from("exercises")
@@ -325,7 +350,7 @@ export default function WorkoutSession() {
 
     const { data, error, count } = await exerciseQuery.range(
       (page - 1) * PAGE_SIZE,
-      page * PAGE_SIZE - 1
+      page * PAGE_SIZE - 1,
     );
 
     if (error) {
@@ -364,21 +389,6 @@ export default function WorkoutSession() {
     fetchCategories();
   }, []);
 
-  const handleAddExercise = (exercise: any) => {
-    setWorkoutExercises((prev) => [
-      ...prev,
-      {
-        ...exercise,
-        sets: 1,
-        reps: 10,
-        weight: 0,
-        exercise_order: prev.length,
-      },
-    ]);
-    toast.success(`${exercise.name} added to workout`); // Add success toast
-    onClose();
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -403,33 +413,41 @@ export default function WorkoutSession() {
 
   // Modify your exercise initialization effect
   useEffect(() => {
-    if (workoutExercises.length > 0) {
-      // Check for existing progress
-      if (activeSession?.progress?.exercises) {
-        setSessionExercises(activeSession.progress.exercises);
-      } else {
-        setSessionExercises(
-          workoutExercises.map((exercise) => ({
-            id: exercise.id,
-            name: exercise.name,
-            targetSets: exercise.sets,
-            targetReps: exercise.reps,
-            targetWeight: exercise.weight,
-            actualSets: Array.from({ length: exercise.sets }, (_, i) => ({
-              setNumber: i + 1,
-              reps: 0,
-              weight: 0,
-              completed: false,
-            })),
-          }))
-        );
-      }
+    // Wait for workoutExercises to load
+    if (isLoading || workoutExercises.length === 0) return;
+
+    // Skip if we already have session exercises (already initialized)
+    if (sessionExercises.length > 0) return;
+
+    // Priority 1: Restore from activeSession if it has data
+    if (
+      activeSession?.progress?.exercises &&
+      activeSession.progress.exercises.length > 0
+    ) {
+      setSessionExercises(activeSession.progress.exercises);
+      return;
     }
-  }, [workoutExercises, activeSession]);
+
+    // Priority 2: Initialize fresh only if no session data exists
+    const freshExercises = workoutExercises.map((exercise) => ({
+      id: exercise.id,
+      name: exercise.name,
+      targetSets: exercise.sets,
+      targetReps: exercise.reps,
+      targetWeight: exercise.weight,
+      actualSets: Array.from({ length: exercise.sets }, (_, i) => ({
+        setNumber: i + 1,
+        reps: 0,
+        weight: 0,
+        completed: false,
+      })),
+    }));
+    setSessionExercises(freshExercises);
+  }, [workoutExercises, activeSession, isLoading, sessionExercises.length]);
 
   // 2. Update the handleCustomExerciseSubmit function to check for duplicates
   const handleCustomExerciseSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -438,7 +456,7 @@ export default function WorkoutSession() {
     setCustomExerciseError(null);
 
     const data = Object.fromEntries(
-      new FormData(e.currentTarget as HTMLFormElement)
+      new FormData(e.currentTarget as HTMLFormElement),
     );
     const { exerciseName, exerciseDescription } = data;
 
@@ -540,12 +558,12 @@ export default function WorkoutSession() {
 
     // Check if any sets are completed
     const hasCompletedSets = sessionExercises.some((exercise) =>
-      exercise.actualSets.some((set) => set.completed)
+      exercise.actualSets.some((set) => set.completed),
     );
 
     if (!hasCompletedSets) {
       toast.error(
-        "Please complete at least one set before finishing the workout"
+        "Please complete at least one set before finishing the workout",
       );
       setCompletingWorkout(false);
       return;
@@ -553,7 +571,7 @@ export default function WorkoutSession() {
 
     // Check if any exercises have no completed sets at all
     const incompleteExercises = sessionExercises.filter(
-      (exercise) => !exercise.actualSets.some((set) => set.completed)
+      (exercise) => !exercise.actualSets.some((set) => set.completed),
     );
 
     if (incompleteExercises.length > 0) {
@@ -604,7 +622,7 @@ export default function WorkoutSession() {
     });
 
     const originalExerciseIds = new Set(
-      workoutExercises.map((ex: any) => ex.id)
+      workoutExercises.map((ex: any) => ex.id),
     );
     const newExercises: typeof newExercisesToAdd = {};
     const removedExercises: typeof exercisesToRemove = {};
@@ -612,7 +630,7 @@ export default function WorkoutSession() {
     // Find exercises that were in the original workout but removed during session
     workoutExercises.forEach((originalEx: any) => {
       const stillExists = sessionExercises.some(
-        (ex) => ex.id === originalEx.id
+        (ex) => ex.id === originalEx.id,
       );
       if (!stillExists) {
         removedExercises[originalEx.id] = {
@@ -631,12 +649,12 @@ export default function WorkoutSession() {
       if (completedSets.length > 0) {
         // Get the best metrics from completed sets
         const bestWeight = Math.max(
-          ...completedSets.map((set) => set.weight || 0)
+          ...completedSets.map((set) => set.weight || 0),
         );
         const bestReps = Math.max(...completedSets.map((set) => set.reps || 0));
         // Best single-set volume (standard fitness metric)
         const bestVolume = Math.max(
-          ...completedSets.map((set) => (set.weight || 0) * (set.reps || 0))
+          ...completedSets.map((set) => (set.weight || 0) * (set.reps || 0)),
         );
 
         // Get existing PRs for this exercise (if any exist in analytics)
@@ -732,7 +750,7 @@ export default function WorkoutSession() {
       for (const exercise of sessionExercises) {
         // Get all completed sets for this exercise
         const completedSets = exercise.actualSets.filter(
-          (set) => set.completed
+          (set) => set.completed,
         );
         if (completedSets.length === 0) continue;
 
@@ -752,7 +770,7 @@ export default function WorkoutSession() {
           if (exerciseError) {
             console.error(
               "Error inserting session exercise set:",
-              exerciseError
+              exerciseError,
             );
             console.error("Error details:", JSON.stringify(exerciseError));
           }
@@ -768,7 +786,7 @@ export default function WorkoutSession() {
       // This forces a FULL page reload instead of client-side navigation
       setTimeout(() => {
         window.location.replace(
-          `/protected/sessions/${session.id}?ts=${Date.now()}`
+          `/protected/sessions/${session.id}?ts=${Date.now()}`,
         );
       }, 300);
 
@@ -776,7 +794,7 @@ export default function WorkoutSession() {
     } catch (error: any) {
       console.error("Error saving session:", error);
       toast.error(
-        "Failed to save session: " + (error.message || "Unknown error")
+        "Failed to save session: " + (error.message || "Unknown error"),
       );
       setIsSubmitting(false);
       return false;
@@ -917,7 +935,7 @@ export default function WorkoutSession() {
                   },
                   {
                     onConflict: "user_id,exercise_id",
-                  }
+                  },
                 );
 
               if (analyticsError) {
@@ -949,19 +967,19 @@ export default function WorkoutSession() {
                 },
                 {
                   onConflict: "user_id,exercise_id",
-                }
+                },
               );
 
             if (analyticsError) {
               console.error(
                 "Analytics update error for new exercise:",
-                analyticsError
+                analyticsError,
               );
             }
           } catch (err) {
             console.error(
               "Exception in analytics update for new exercise:",
-              err
+              err,
             );
           }
         }
@@ -991,21 +1009,25 @@ export default function WorkoutSession() {
   const handleDeleteExercise = (exerciseIndex: number) => {
     const exerciseName = sessionExercises[exerciseIndex].name;
     setSessionExercises((prev) =>
-      prev.filter((_, index) => index !== exerciseIndex)
+      prev.filter((_, index) => index !== exerciseIndex),
     );
     toast.success(`${exerciseName} removed from workout`);
   };
 
   // Add this to your component
-  const hasUpdatedRef = useRef(false);
+  const previousExercisesRef = useRef<SessionExercise[]>([]);
 
   useEffect(() => {
-    if (isLoading || hasUpdatedRef.current) return;
+    if (isLoading || !sessionExercises?.length) return;
 
-    if (sessionExercises?.length > 0) {
+    // Only update if exercises actually changed
+    const exercisesChanged =
+      JSON.stringify(sessionExercises) !==
+      JSON.stringify(previousExercisesRef.current);
+
+    if (exercisesChanged) {
       updateSessionProgress(sessionExercises);
-      // Mark as updated so we don't repeat unnecessarily
-      hasUpdatedRef.current = true;
+      previousExercisesRef.current = sessionExercises;
     }
   }, [sessionExercises, isLoading, updateSessionProgress]);
 
@@ -1022,14 +1044,14 @@ export default function WorkoutSession() {
     const newExercises = [...sessionExercises];
     const currentSet = newExercises[exerciseIndex].actualSets[setIndex];
     const previousSets = newExercises[exerciseIndex].actualSets.filter(
-      (_, idx) => idx < setIndex && !_.completed
+      (_, idx) => idx < setIndex && !_.completed,
     );
 
     // Check if previous sets are incomplete
     if (previousSets.length > 0 && !currentSet.completed) {
       // Show warning but allow it
       toast.warning(
-        `You have ${previousSets.length} incomplete previous set(s). Consider completing in order.`
+        `You have ${previousSets.length} incomplete previous set(s). Consider completing in order.`,
       );
     }
 
@@ -1249,12 +1271,12 @@ export default function WorkoutSession() {
               {sessionExercises.reduce(
                 (acc, ex) =>
                   acc + ex.actualSets.filter((set) => set.completed).length,
-                0
+                0,
               )}
               /
               {sessionExercises.reduce(
                 (acc, ex) => acc + ex.actualSets.length,
-                0
+                0,
               )}{" "}
               sets
             </div>
@@ -1267,7 +1289,6 @@ export default function WorkoutSession() {
         ref={formRef}
         className="w-full max-w-full justify-center items-center space-y-4"
         validationBehavior="native"
-        onReset={() => setSubmitted(null)}
         onSubmit={onSessionSubmit}
       >
         <div className="flex flex-col gap-6 w-full">
@@ -1281,12 +1302,12 @@ export default function WorkoutSession() {
                   {sessionExercises.reduce(
                     (acc, ex) =>
                       acc + ex.actualSets.filter((set) => set.completed).length,
-                    0
+                    0,
                   )}
                   /
                   {sessionExercises.reduce(
                     (acc, ex) => acc + ex.actualSets.length,
-                    0
+                    0,
                   )}
                 </span>{" "}
                 sets completed
@@ -1303,16 +1324,16 @@ export default function WorkoutSession() {
                   (sessionExercises.reduce(
                     (acc, ex) =>
                       acc + ex.actualSets.filter((set) => set.completed).length,
-                    0
+                    0,
                   ) /
                     Math.max(
                       1,
                       sessionExercises.reduce(
                         (acc, ex) => acc + ex.actualSets.length,
-                        0
-                      )
+                        0,
+                      ),
                     )) *
-                    100
+                    100,
                 )}
                 %
               </span>
@@ -1326,14 +1347,14 @@ export default function WorkoutSession() {
                       (acc, ex) =>
                         acc +
                         ex.actualSets.filter((set) => set.completed).length,
-                      0
+                      0,
                     ) /
                       Math.max(
                         1,
                         sessionExercises.reduce(
                           (acc, ex) => acc + ex.actualSets.length,
-                          0
-                        )
+                          0,
+                        ),
                       )) *
                     100
                   }%`,
@@ -1459,7 +1480,7 @@ export default function WorkoutSession() {
                           style={{
                             width: `${
                               (exercise.actualSets.filter(
-                                (set) => set.completed
+                                (set) => set.completed,
                               ).length /
                                 Math.max(1, exercise.actualSets.length)) *
                               100
@@ -1732,7 +1753,7 @@ export default function WorkoutSession() {
                                   // Remove the set at the specified index
                                   newExercises[exerciseIndex].actualSets.splice(
                                     setIndex,
-                                    1
+                                    1,
                                   );
 
                                   // Renumber the remaining sets
@@ -1741,7 +1762,7 @@ export default function WorkoutSession() {
                                       (set, idx) => ({
                                         ...set,
                                         setNumber: idx + 1,
-                                      })
+                                      }),
                                     );
 
                                   // Update state
@@ -1749,7 +1770,7 @@ export default function WorkoutSession() {
 
                                   // Show confirmation toast
                                   toast.success(
-                                    `Set removed from ${exercise.name}`
+                                    `Set removed from ${exercise.name}`,
                                   );
 
                                   setRemovingSet(null);
@@ -1796,7 +1817,7 @@ export default function WorkoutSession() {
                         });
                         setSessionExercises(newExercises);
                         toast.info(
-                          `Set ${newSetNumber} added to ${exercise.name}`
+                          `Set ${newSetNumber} added to ${exercise.name}`,
                         );
                         setAddingSet(null);
                       }, 300);
@@ -1972,7 +1993,7 @@ export default function WorkoutSession() {
                               </div>
                             </div>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   )}
@@ -2016,7 +2037,7 @@ export default function WorkoutSession() {
                               </Chip>
                             </div>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   )}
@@ -2042,7 +2063,7 @@ export default function WorkoutSession() {
                         ([exerciseId, update]) => {
                           // Find the exercise in sessionExercises to get the name
                           const exercise = sessionExercises.find(
-                            (ex) => ex.id === exerciseId
+                            (ex) => ex.id === exerciseId,
                           );
                           if (!exercise) return null;
 
@@ -2132,7 +2153,7 @@ export default function WorkoutSession() {
                                     value={update.sets.toString()}
                                     onChange={(e) => {
                                       const value = parseInt(
-                                        e.target.value || "0"
+                                        e.target.value || "0",
                                       );
                                       setWorkoutUpdates({
                                         ...workoutUpdates,
@@ -2168,7 +2189,7 @@ export default function WorkoutSession() {
                                     value={update.reps.toString()}
                                     onChange={(e) => {
                                       const value = parseInt(
-                                        e.target.value || "0"
+                                        e.target.value || "0",
                                       );
                                       setWorkoutUpdates({
                                         ...workoutUpdates,
@@ -2203,15 +2224,15 @@ export default function WorkoutSession() {
                                     }}
                                     value={convertFromStorageUnit(
                                       update.weight,
-                                      useMetric
+                                      useMetric,
                                     ).toFixed(1)}
                                     onChange={(e) => {
                                       const displayValue = parseFloat(
-                                        e.target.value || "0"
+                                        e.target.value || "0",
                                       );
                                       const storageValue = convertToStorageUnit(
                                         displayValue,
-                                        useMetric
+                                        useMetric,
                                       );
 
                                       setWorkoutUpdates({
@@ -2255,13 +2276,13 @@ export default function WorkoutSession() {
                                         Weight:{" "}
                                         {displayWeight(
                                           exercise.targetWeight,
-                                          useMetric
+                                          useMetric,
                                         )}{" "}
                                         →{" "}
                                         <strong>
                                           {displayWeight(
                                             update.weight,
-                                            useMetric
+                                            useMetric,
                                           )}
                                         </strong>
                                       </span>
@@ -2271,7 +2292,7 @@ export default function WorkoutSession() {
                               )}
                             </div>
                           );
-                        }
+                        },
                       )}
                     </div>
                   )}
@@ -2429,7 +2450,7 @@ export default function WorkoutSession() {
                                     reps: 0,
                                     weight: 0,
                                     completed: false,
-                                  })
+                                  }),
                                 ),
                               };
 
@@ -2440,7 +2461,7 @@ export default function WorkoutSession() {
                                   newExercise,
                                 ]);
                                 toast.success(
-                                  `${exercise.name} added to workout`
+                                  `${exercise.name} added to workout`,
                                 );
                                 setAddingExercise(null);
                                 onClose();
@@ -2582,7 +2603,7 @@ export default function WorkoutSession() {
                   color="primary"
                   onPress={() => {
                     const form = document.getElementById(
-                      "custom-exercise-form"
+                      "custom-exercise-form",
                     ) as HTMLFormElement;
                     if (form) {
                       form.requestSubmit();
@@ -2677,7 +2698,7 @@ export default function WorkoutSession() {
 
                     // Get the original workout exercise IDs
                     const originalExerciseIds = new Set(
-                      workoutExercises.map((ex: any) => ex.id)
+                      workoutExercises.map((ex: any) => ex.id),
                     );
 
                     // Track new exercises (added during session but not in original workout)
@@ -2688,7 +2709,7 @@ export default function WorkoutSession() {
                     // Find exercises that were in the original workout but removed during session
                     workoutExercises.forEach((originalEx: any) => {
                       const stillExists = sessionExercises.some(
-                        (ex) => ex.id === originalEx.id
+                        (ex) => ex.id === originalEx.id,
                       );
                       if (!stillExists) {
                         removedExercises[originalEx.id] = {
@@ -2702,23 +2723,23 @@ export default function WorkoutSession() {
                     // Calculate suggested updates with comprehensive PR detection
                     sessionExercises.forEach((exercise) => {
                       const completedSets = exercise.actualSets.filter(
-                        (set) => set.completed
+                        (set) => set.completed,
                       );
                       const isNewExercise = !originalExerciseIds.has(
-                        exercise.id
+                        exercise.id,
                       );
 
                       if (completedSets.length > 0) {
                         const bestWeight = Math.max(
-                          ...completedSets.map((set) => set.weight || 0)
+                          ...completedSets.map((set) => set.weight || 0),
                         );
                         const bestReps = Math.max(
-                          ...completedSets.map((set) => set.reps || 0)
+                          ...completedSets.map((set) => set.reps || 0),
                         );
                         const bestVolume = Math.max(
                           ...completedSets.map(
-                            (set) => (set.weight || 0) * (set.reps || 0)
-                          )
+                            (set) => (set.weight || 0) * (set.reps || 0),
+                          ),
                         );
 
                         // Check if user has existing analytics record for this exercise
