@@ -20,38 +20,24 @@ import {
   ChevronRight,
   Clock,
   Dumbbell,
-  Flame,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // Helper functions for stats calculations
-const calculateStreakDays = (sessions: any[]) => {
+const calculateWorkoutsThisWeek = (sessions: any[]) => {
   if (!sessions.length) return 0;
 
-  // Sort sessions by date
-  const sortedDates = sessions
-    .map((s) => new Date(s.started_at).setHours(0, 0, 0, 0))
-    .sort((a, b) => b - a); // Descending (most recent first)
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+  startOfWeek.setHours(0, 0, 0, 0);
 
-  // Remove duplicates (same day)
-  const uniqueDates = Array.from(new Set(sortedDates));
-
-  let streak = 1;
-  const MS_PER_DAY = 86400000;
-
-  // Count consecutive days
-  for (let i = 0; i < uniqueDates.length - 1; i++) {
-    const diff = uniqueDates[i] - uniqueDates[i + 1];
-    if (diff === MS_PER_DAY) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-
-  return streak;
+  return sessions.filter((session) => {
+    const sessionDate = new Date(session.started_at);
+    return sessionDate >= startOfWeek;
+  }).length;
 };
 
 const calculateTotalWeight = (sessions: any[]) => {
@@ -313,14 +299,14 @@ export default function SessionsPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-green-600 dark:text-green-300">
-                      Day Streak
+                      This Week
                     </p>
                     <h3 className="text-3xl font-bold mt-1">
-                      {calculateStreakDays(sessions)}
+                      {calculateWorkoutsThisWeek(sessions)}
                     </h3>
                   </div>
                   <div className="bg-green-500/10 p-2 rounded-lg">
-                    <Flame className="h-5 w-5 text-green-600 dark:text-green-300" />
+                    <Calendar className="h-5 w-5 text-green-600 dark:text-green-300" />
                   </div>
                 </div>
               </CardBody>
