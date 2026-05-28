@@ -18,12 +18,10 @@ export default function ActiveSessionBanner() {
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
-  // Mark as client-side rendered
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Calculate and update elapsed time
   useEffect(() => {
     if (!activeSession || !isClient) return;
 
@@ -49,29 +47,24 @@ export default function ActiveSessionBanner() {
   }, [activeSession, isClient]);
 
   const handleEndSession = () => {
-    // Call context endSession
     endSession();
-
-    // Close modal
     setShowEndConfirmation(false);
 
-    // Force a full page reload to ensure clean state
     setTimeout(() => {
       window.location.href = window.location.pathname + "?ts=" + Date.now();
     }, 100);
   };
 
-  // Don't render during SSR or if no active session
   if (!isClient || !activeSession) {
     return null;
   }
 
   return (
-    <div className="bg-amber-100 dark:bg-amber-900 border-l-4 border-amber-500 p-4 mb-4 shadow-md">
+    <div className="bg-warning/15 border-l-4 border-warning p-4 mb-4 shadow-sm rounded-r-lg">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <p className="font-bold dark:text-white">Active Workout Session</p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="font-bold text-foreground">Active Workout Session</p>
+          <p className="text-sm text-muted-foreground">
             {activeSession?.workoutName} ({elapsedMinutes}{" "}
             {elapsedMinutes === 1 ? "minute" : "minutes"} elapsed)
           </p>
@@ -96,7 +89,7 @@ export default function ActiveSessionBanner() {
             }
             color="primary"
             size="sm"
-            className="w-full sm:w-auto dark:text-white"
+            className="w-full sm:w-auto"
           >
             Return to Session
           </Button>

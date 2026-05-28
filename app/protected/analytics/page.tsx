@@ -44,6 +44,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { chartColors } from "@/lib/chart-colors";
 import { toast } from "sonner";
 
 export default function AnalyticsPage() {
@@ -713,7 +714,7 @@ export default function AnalyticsPage() {
                               type="monotone"
                               dataKey="maxWeight"
                               name="Max Weight"
-                              stroke="#8884d8"
+                              stroke={chartColors.primary}
                               strokeWidth={3}
                               dot={{ r: 5, strokeWidth: 2 }}
                               activeDot={{ r: 7 }}
@@ -789,7 +790,7 @@ export default function AnalyticsPage() {
                               type="monotone"
                               dataKey="totalVolume"
                               name="Volume"
-                              stroke="#82ca9d"
+                              stroke={chartColors.success}
                               strokeWidth={3}
                               dot={{ r: 5, strokeWidth: 2 }}
                               activeDot={{ r: 7 }}
@@ -899,7 +900,7 @@ export default function AnalyticsPage() {
 
                         {/* Enhanced stats display */}
                         <div className="grid grid-cols-3 gap-2">
-                          <div className="flex flex-col items-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl">
+                          <div className="flex flex-col items-center p-3 bg-gradient-to-br from-muted to-secondary rounded-xl border border-border/50">
                             <span className="text-xs text-gray-500 mb-1">
                               Max Weight
                             </span>
@@ -907,7 +908,7 @@ export default function AnalyticsPage() {
                               {displayWeight(record.max_weight, useMetric)}
                             </span>
                           </div>
-                          <div className="flex flex-col items-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl">
+                          <div className="flex flex-col items-center p-3 bg-gradient-to-br from-muted to-secondary rounded-xl border border-border/50">
                             <span className="text-xs text-gray-500 mb-1">
                               Max Reps
                             </span>
@@ -915,7 +916,7 @@ export default function AnalyticsPage() {
                               {record.max_reps}
                             </span>
                           </div>
-                          <div className="flex flex-col items-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-xl">
+                          <div className="flex flex-col items-center p-3 bg-gradient-to-br from-muted to-secondary rounded-xl border border-border/50">
                             <span className="text-xs text-gray-500 mb-1">
                               Max Volume
                             </span>
@@ -1084,7 +1085,7 @@ export default function AnalyticsPage() {
                         <Bar
                           dataKey="volume"
                           name={`Volume (${useMetric ? "kg" : "lbs"})`}
-                          fill="#8884d8"
+                          fill={chartColors.primary}
                           radius={[0, 4, 4, 0]}
                           barSize={window.innerWidth < 640 ? 15 : 20}
                           animationDuration={1000}

@@ -38,7 +38,7 @@ export default function Navbar() {
   ];
 
   return (
-    <div className="fixed bottom-0 w-full border-t border-border bg-background py-2 px-4 z-[9999] backdrop-blur-sm">
+    <div className="fixed bottom-0 w-full border-t border-border/80 bg-background/95 py-2 px-4 z-[9999] backdrop-blur-md shadow-[0_-4px_24px_-4px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_24px_-4px_rgba(0,0,0,0.4)]">
       <nav className="max-w-md mx-auto">
         <ul className="flex justify-between items-center">
           {navItems.map((item) => {
@@ -50,10 +50,10 @@ export default function Navbar() {
                   <div className="flex flex-col items-center space-y-1">
                     <div
                       className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-md transition-colors",
+                        "flex h-10 w-10 items-center justify-center rounded-2xl transition-all duration-200",
                         isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                          ? "bg-primary text-primary-foreground shadow-sm scale-105"
+                          : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                       )}
                     >
                       {item.icon}
@@ -61,7 +61,7 @@ export default function Navbar() {
                     <span
                       className={cn(
                         "text-xs font-medium",
-                        isActive ? "text-foreground" : "text-muted-foreground"
+                        isActive ? "text-primary" : "text-muted-foreground"
                       )}
                     >
                       {item.label}

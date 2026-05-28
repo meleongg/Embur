@@ -8,9 +8,9 @@ export default function TermsOfService() {
         Terms of Service
       </h1>
 
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="prose max-w-none">
-          <p className="text-gray-600 mb-8">Last updated: March 21, 2025</p>
+      <div className="bg-card p-6 rounded-xl border border-border/60 shadow-sm">
+        <div className="prose max-w-none text-foreground">
+          <p className="text-muted-foreground mb-8">Last updated: March 21, 2025</p>
 
           <section className="mb-8">
             <h2 className="text-xl font-bold mb-4">1. Acceptance of Terms</h2>

@@ -20,13 +20,11 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+      },
       colors: {
-        oatBrown: "#D2B48C",
-        creamyBeige: {
-          DEFAULT: "#F5F5DC",
-          dark: "#3A3A3A", // Dark variant
-        },
-        black: "#333333",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -52,6 +50,14 @@ const config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -59,6 +65,13 @@ const config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        chart: {
+          1: "hsl(var(--chart-1))",
+          2: "hsl(var(--chart-2))",
+          3: "hsl(var(--chart-3))",
+          4: "hsl(var(--chart-4))",
+          5: "hsl(var(--chart-5))",
         },
       },
       borderRadius: {
@@ -82,7 +95,37 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), nextui()],
+  plugins: [
+    require("tailwindcss-animate"),
+    nextui({
+      themes: {
+        light: {
+          colors: {
+            background: "#FAFAF9",
+            foreground: "#3D405B",
+            primary: {
+              DEFAULT: "#E07A5F",
+              foreground: "#FFFFFF",
+            },
+            focus: "#E07A5F",
+            divider: "#E4E4E7",
+          },
+        },
+        dark: {
+          colors: {
+            background: "#18181B",
+            foreground: "#FAFAFA",
+            primary: {
+              DEFAULT: "#F4A261",
+              foreground: "#18181B",
+            },
+            focus: "#F4A261",
+            divider: "#3F3F46",
+          },
+        },
+      },
+    }),
+  ],
 } satisfies Config;
 
 export default config;

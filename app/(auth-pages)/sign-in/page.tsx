@@ -9,80 +9,78 @@ import Link from "next/link";
 export default async function Login(props: { searchParams: Promise<Message> }) {
   const searchParams = await props.searchParams;
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-gray-50">
-      <div className="w-full max-w-md">
-        <div className="bg-white p-8 rounded-lg shadow-md">
-          <div className="mb-6 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="bg-primary p-3 rounded-full">
-                <Dumbbell className="h-6 w-6 text-white" />
-              </div>
+    <div className="w-full max-w-md">
+      <div className="bg-card p-8 rounded-xl border border-border/60 shadow-sm">
+        <div className="mb-6 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="bg-primary p-3 rounded-full">
+              <Dumbbell className="h-6 w-6 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold">Welcome back</h1>
-            <p className="text-sm text-gray-700 mt-1">
-              Sign in to continue to FitFlash
-            </p>
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Sign in to continue to FitFlash
+          </p>
+        </div>
+
+        <form className="flex flex-col gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email
+            </Label>
+            <Input
+              name="email"
+              id="email"
+              placeholder="you@example.com"
+              type="email"
+              className="w-full h-10 px-3 py-2 border rounded-md"
+              required
+            />
           </div>
 
-          <form className="flex flex-col gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="password" className="text-sm font-medium">
+                Password
               </Label>
-              <Input
-                name="email"
-                id="email"
-                placeholder="you@example.com"
-                type="email"
-                className="w-full h-10 px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </Label>
-                <Link
-                  className="text-xs text-primary hover:underline"
-                  href="/forgot-password"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
-              <Input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="Your password"
-                className="w-full h-10 px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
-
-            <FormMessage message={searchParams} />
-
-            <SubmitButton
-              pendingText="Signing In..."
-              formAction={signInAction}
-              className="w-full bg-primary text-white py-2 rounded-md font-medium hover:bg-primary-dark transition-colors mt-2"
-            >
-              Sign in
-            </SubmitButton>
-          </form>
-
-          <div className="text-center mt-6">
-            <p className="text-sm text-gray-700">
-              Don't have an account?{" "}
               <Link
-                className="text-primary font-medium hover:underline"
-                href="/sign-up"
+                className="text-xs text-primary hover:underline"
+                href="/forgot-password"
               >
-                Sign up
+                Forgot Password?
               </Link>
-            </p>
+            </div>
+            <Input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Your password"
+              className="w-full h-10 px-3 py-2 border rounded-md"
+              required
+            />
           </div>
+
+          <FormMessage message={searchParams} />
+
+          <SubmitButton
+            pendingText="Signing In..."
+            formAction={signInAction}
+            className="w-full bg-primary text-primary-foreground py-2 rounded-lg font-medium hover:opacity-90 transition-opacity mt-2"
+          >
+            Sign in
+          </SubmitButton>
+        </form>
+
+        <div className="text-center mt-6">
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link
+              className="text-primary font-medium hover:underline"
+              href="/sign-up"
+            >
+              Sign up
+            </Link>
+          </p>
         </div>
       </div>
     </div>

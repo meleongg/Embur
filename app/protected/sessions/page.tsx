@@ -276,76 +276,74 @@ export default function SessionsPage() {
             .map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
-            <Card className="bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/20">
+            <Card className="bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-blue-600 dark:text-blue-300">
+                    <p className="text-sm text-primary font-medium">
                       Total Sessions
                     </p>
-                    <h3 className="text-3xl font-bold mt-1">
+                    <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
                       {sessions.length}
                     </h3>
                   </div>
-                  <div className="bg-blue-500/10 p-2 rounded-lg">
-                    <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                  <div className="bg-primary/15 p-2 rounded-lg">
+                    <Calendar className="h-5 w-5 text-primary" />
                   </div>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20">
+            <Card className="bg-gradient-to-br from-success/20 to-success/5 border border-success/10">
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-green-600 dark:text-green-300">
-                      This Week
-                    </p>
-                    <h3 className="text-3xl font-bold mt-1">
+                    <p className="text-sm text-success font-medium">This Week</p>
+                    <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
                       {calculateWorkoutsThisWeek(sessions)}
                     </h3>
                   </div>
-                  <div className="bg-green-500/10 p-2 rounded-lg">
-                    <Calendar className="h-5 w-5 text-green-600 dark:text-green-300" />
+                  <div className="bg-success/15 p-2 rounded-lg">
+                    <Calendar className="h-5 w-5 text-success" />
                   </div>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/20">
+            <Card className="bg-gradient-to-br from-muted to-secondary border border-border">
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-purple-600 dark:text-purple-300">
+                    <p className="text-sm text-muted-foreground font-medium">
                       Sets Completed
                     </p>
-                    <h3 className="text-3xl font-bold mt-1">
+                    <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
                       {calculateTotalSets(sessions)}
                     </h3>
                   </div>
-                  <div className="bg-purple-500/10 p-2 rounded-lg">
-                    <Award className="h-5 w-5 text-purple-600 dark:text-purple-300" />
+                  <div className="bg-foreground/5 p-2 rounded-lg">
+                    <Award className="h-5 w-5 text-foreground" />
                   </div>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20">
+            <Card className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/10">
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-amber-600 dark:text-amber-300">
+                    <p className="text-sm text-warning font-medium">
                       Total Volume
                     </p>
-                    <h3 className="text-3xl font-bold mt-1">
+                    <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
                       {displayTotalWeight(calculateTotalWeight(sessions))}
-                      <span className="text-sm ml-1 font-normal">
+                      <span className="text-sm ml-1 font-normal font-sans">
                         {useMetric ? "kg" : "lbs"}
                       </span>
                     </h3>
                   </div>
-                  <div className="bg-amber-500/10 p-2 rounded-lg">
-                    <BarChart3 className="h-5 w-5 text-amber-600 dark:text-amber-300" />
+                  <div className="bg-warning/15 p-2 rounded-lg">
+                    <BarChart3 className="h-5 w-5 text-warning" />
                   </div>
                 </div>
               </CardBody>

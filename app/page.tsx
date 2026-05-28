@@ -1,3 +1,4 @@
+import MarketingNav from "@/components/marketing-nav";
 import {
   Activity,
   ArrowRight,
@@ -10,139 +11,117 @@ import Link from "next/link";
 
 export default async function Home() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center">
-              <div className="bg-primary p-2 rounded-full">
-                <Dumbbell className="h-5 w-5 text-white" />
-              </div>
-              <span className="ml-2 text-xl font-bold">FitFlash</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/sign-in"
-                className="text-gray-700 hover:text-primary transition-colors px-3 py-2"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/sign-up"
-                className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
-              >
-                Sign up
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen flex flex-col bg-background">
+      <MarketingNav />
 
       <main className="flex-1 flex flex-col gap-12 px-4 py-8 sm:px-6 lg:px-8">
-        {/* Hero Section */}
         <section className="max-w-4xl mx-auto text-center pt-12 pb-16">
           <div className="flex justify-center mb-6">
-            <div className="bg-primary p-4 rounded-full">
-              <Dumbbell className="h-10 w-10 text-white" />
+            <div className="bg-primary p-4 rounded-full shadow-md">
+              <Dumbbell className="h-10 w-10 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+          <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 tracking-tight">
             Track Your Fitness Journey with Ease
           </h1>
-          <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             FitFlash helps you track workouts, monitor progress, and achieve
             your fitness goals with a simple, intuitive interface.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/sign-up"
-              className="bg-primary text-white px-6 py-3 rounded-md font-medium hover:bg-primary-dark transition-colors flex items-center justify-center"
+              className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
             >
               Get Started <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
             <Link
               href="#features"
-              className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium hover:bg-gray-50 transition-colors"
+              className="bg-card border border-border text-foreground px-6 py-3 rounded-lg font-medium hover:bg-accent transition-colors"
             >
               Learn More
             </Link>
           </div>
         </section>
 
-        {/* Features Section */}
         <section id="features" className="max-w-6xl mx-auto py-12">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Everything You Need</h2>
-            <p className="text-gray-700 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold text-foreground mb-4">
+              Everything You Need
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               FitFlash provides all the tools you need to track and improve your
               fitness journey
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-card p-6 rounded-xl border border-border/60 shadow-sm">
               <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                 <Activity className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Workout Tracking</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                Workout Tracking
+              </h3>
+              <p className="text-muted-foreground">
                 Log your exercises, sets, reps, and weights with an intuitive
                 interface designed for the gym.
               </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-card p-6 rounded-xl border border-border/60 shadow-sm">
               <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                 <BarChart2 className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Progress Analytics</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                Progress Analytics
+              </h3>
+              <p className="text-muted-foreground">
                 Visualize your progress with detailed charts and metrics to keep
                 you motivated.
               </p>
             </div>
 
-            {/* Feature 3 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-card p-6 rounded-xl border border-border/60 shadow-sm">
               <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                 <Calendar className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Workout Planning</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                Workout Planning
+              </h3>
+              <p className="text-muted-foreground">
                 Create and schedule your workouts in advance to stay consistent
                 with your routine.
               </p>
             </div>
 
-            {/* Feature 4 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-card p-6 rounded-xl border border-border/60 shadow-sm">
               <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                 <CheckCircle className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Exercise Library</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                Exercise Library
+              </h3>
+              <p className="text-muted-foreground">
                 Access a comprehensive library of exercises with instructions
                 and muscle targeting information.
               </p>
             </div>
 
-            {/* Feature 5 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-card p-6 rounded-xl border border-border/60 shadow-sm">
               <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                 <Dumbbell className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Personal Records</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                Personal Records
+              </h3>
+              <p className="text-muted-foreground">
                 Track your personal bests and celebrate your achievements as you
                 progress.
               </p>
             </div>
 
-            {/* Feature 6 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-card p-6 rounded-xl border border-border/60 shadow-sm">
               <div className="bg-primary/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -158,57 +137,60 @@ export default async function Home() {
                   <path d="M9 12l2 2 4-4" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-2">Data Security</h3>
-              <p className="text-gray-700">
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                Data Security
+              </h3>
+              <p className="text-muted-foreground">
                 Your fitness data is securely stored and accessible only to you.
               </p>
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="bg-primary text-white py-16 px-4 rounded-lg max-w-6xl mx-auto">
+        <section className="bg-primary text-primary-foreground py-16 sm:py-20 px-6 sm:px-10 rounded-2xl max-w-6xl mx-auto shadow-lg">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
               Ready to start your fitness journey?
             </h2>
-            <p className="text-lg mb-8 opacity-90">
+            <p className="text-lg sm:text-xl mb-10 opacity-90 leading-relaxed">
               Get started with tracking your fitness progress with FitFlash.
             </p>
             <Link
               href="/sign-up"
-              className="bg-white text-primary px-6 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors inline-flex items-center"
+              className="bg-card text-primary px-8 py-4 sm:px-10 sm:py-4 rounded-xl text-base sm:text-lg font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 inline-flex items-center justify-center gap-2 min-w-[220px]"
             >
               Get Started for Free
+              <ArrowRight className="h-5 w-5" />
             </Link>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-12">
+      <footer className="bg-card border-t border-border py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center flex-col md:flex-row">
             <div className="flex items-center mb-6 md:mb-0">
               <div className="bg-primary p-2 rounded-full">
-                <Dumbbell className="h-5 w-5 text-white" />
+                <Dumbbell className="h-5 w-5 text-primary-foreground" />
               </div>
-              <span className="ml-2 text-xl font-bold">FitFlash</span>
+              <span className="ml-2 text-xl font-bold text-foreground">
+                FitFlash
+              </span>
             </div>
             <div className="flex flex-col items-center md:items-end">
-              <p className="text-gray-700 text-sm mb-2">
-                © 2025 FitFlash. All rights reserved.
+              <p className="text-muted-foreground text-sm mb-2">
+                © 2026 FitFlash. All rights reserved.
               </p>
               <div className="flex gap-4">
                 <Link
                   href="/privacy-policy"
-                  className="text-gray-700 hover:text-primary"
+                  className="text-muted-foreground hover:text-primary"
                 >
                   Privacy Policy
                 </Link>
                 <Link
                   href="/terms-of-service"
-                  className="text-gray-700 hover:text-primary"
+                  className="text-muted-foreground hover:text-primary"
                 >
                   Terms of Service
                 </Link>

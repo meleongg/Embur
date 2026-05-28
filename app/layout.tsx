@@ -1,9 +1,22 @@
 import { ConditionalThemeProvider } from "@/components/conditional-theme-provider";
 import { SessionProvider } from "@/contexts/SessionContext";
 import { NextUIProvider } from "@nextui-org/react";
+import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -14,7 +27,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#121212",
+  themeColor: "#18181B",
 };
 
 export const metadata: Metadata = {
@@ -33,7 +46,6 @@ export const metadata: Metadata = {
   ],
   applicationName: "FitFlash",
 
-  // Open Graph / Facebook
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -44,7 +56,7 @@ export const metadata: Metadata = {
     siteName: "FitFlash",
     images: [
       {
-        url: "/images/FitFlash-og-image.png", // Create this 1200×630px image
+        url: "/images/FitFlash-og-image.png",
         width: 1200,
         height: 630,
         alt: "FitFlash App Dashboard",
@@ -52,7 +64,6 @@ export const metadata: Metadata = {
     ],
   },
 
-  // Twitter
   twitter: {
     card: "summary_large_image",
     title: "FitFlash - Fitness Tracking Made Simple",
@@ -60,13 +71,11 @@ export const metadata: Metadata = {
     images: ["/images/FitFlash-twitter-image.png"],
   },
 
-  // Additional SEO metadata
   authors: [{ name: "Melvin Teo" }],
   creator: "Melvin Teo",
   publisher: "FitFlash",
   category: "Fitness & Health",
 
-  // Rest of your existing metadata
   formatDetection: {
     telephone: false,
   },
@@ -91,13 +100,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body
+        className={`${plusJakarta.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+      >
         <ConditionalThemeProvider>
           <NextUIProvider>
             <SessionProvider>
-              <main className="min-h-screen flex flex-col justify-center align-centre">
-                {children}
-              </main>
+              <main className="min-h-screen flex flex-col">{children}</main>
             </SessionProvider>
             <Toaster position="top-center" richColors />
           </NextUIProvider>
