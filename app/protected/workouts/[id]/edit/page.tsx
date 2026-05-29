@@ -566,7 +566,7 @@ export default function EditWorkout() {
     );
   }
 
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (error) return <div className="text-destructive">{error}</div>;
   if (!workout) return <div>Workout not found</div>;
 
   return (
@@ -641,7 +641,7 @@ export default function EditWorkout() {
               {workoutExercises.length === 0 ? (
                 // Show empty state outside the table
                 <div className="text-center py-12 border rounded-lg">
-                  <div className="flex flex-col items-center gap-3 text-gray-500">
+                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <Dumbbell className="w-10 h-10" />
                     <p>No exercises added yet</p>
                     <Button size="sm" color="primary" onPress={handleOpenModal}>
@@ -658,7 +658,7 @@ export default function EditWorkout() {
                     table: "min-w-full",
                   }}
                 >
-                  <TableHeader className="sticky top-0 z-10 bg-white dark:bg-gray-900">
+                  <TableHeader className="sticky top-0 z-10 bg-card">
                     <TableColumn className="w-[80px] min-w-[80px] text-center">
                       ORDER
                     </TableColumn>
@@ -1080,7 +1080,7 @@ export default function EditWorkout() {
                       {isModalLoading ? (
                         <div className="flex flex-col items-center justify-center py-12 gap-4">
                           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             Loading exercises...
                           </p>
                         </div>
@@ -1164,7 +1164,7 @@ export default function EditWorkout() {
                                 isSearching ? (
                                   <div className="py-5">
                                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto my-4"></div>
-                                    <p className="text-center text-gray-500">
+                                    <p className="text-center text-muted-foreground">
                                       Searching...
                                     </p>
                                   </div>
@@ -1241,7 +1241,7 @@ export default function EditWorkout() {
 
                     <ModalBody>
                       {/* Note section with improved styling */}
-                      <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 p-3 rounded-lg text-sm mb-5">
+                      <div className="alert-warning mb-5">
                         <strong>NOTE:</strong> Creating a custom exercise here
                         will add it to your Exercise Library.
                       </div>

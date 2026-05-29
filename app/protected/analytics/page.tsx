@@ -44,11 +44,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { chartColors } from "@/lib/chart-colors";
+import { useTheme } from "@/components/theme-provider";
+import { getChartColors } from "@/lib/chart-colors";
 import { toast } from "sonner";
 
 export default function AnalyticsPage() {
   const supabase = createClient();
+  const { theme } = useTheme();
+  const chartColors = getChartColors(theme);
   const { useMetric } = useUnitPreference();
   const [isLoading, setIsLoading] = useState(true);
   const [isChartLoading, setIsChartLoading] = useState(false);
@@ -637,7 +640,7 @@ export default function AnalyticsPage() {
                       <CardBody className="h-[400px] md:h-80 flex items-center justify-center">
                         <div className="flex flex-col items-center">
                           <Spinner size="lg" className="mb-2" />
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-muted-foreground">
                             Loading chart data...
                           </span>
                         </div>
@@ -811,7 +814,7 @@ export default function AnalyticsPage() {
                         <p className="text-xl font-semibold">
                           No data available
                         </p>
-                        <p className="text-gray-500 mt-2 max-w-md mx-auto">
+                        <p className="text-muted-foreground mt-2 max-w-md mx-auto">
                           You haven't logged any sessions for this exercise yet.
                           Complete a workout with this exercise to see your
                           progress.
@@ -831,7 +834,7 @@ export default function AnalyticsPage() {
                       <p className="text-xl font-semibold">
                         Select an exercise
                       </p>
-                      <p className="text-gray-500 mt-2 max-w-md mx-auto">
+                      <p className="text-muted-foreground mt-2 max-w-md mx-auto">
                         Choose an exercise from the dropdown above to view your
                         progress charts and performance metrics.
                       </p>
@@ -901,7 +904,7 @@ export default function AnalyticsPage() {
                         {/* Enhanced stats display */}
                         <div className="grid grid-cols-3 gap-2">
                           <div className="flex flex-col items-center p-3 bg-gradient-to-br from-muted to-secondary rounded-xl border border-border/50">
-                            <span className="text-xs text-gray-500 mb-1">
+                            <span className="text-xs text-muted-foreground mb-1">
                               Max Weight
                             </span>
                             <span className="font-bold text-sm md:text-base">
@@ -909,7 +912,7 @@ export default function AnalyticsPage() {
                             </span>
                           </div>
                           <div className="flex flex-col items-center p-3 bg-gradient-to-br from-muted to-secondary rounded-xl border border-border/50">
-                            <span className="text-xs text-gray-500 mb-1">
+                            <span className="text-xs text-muted-foreground mb-1">
                               Max Reps
                             </span>
                             <span className="font-bold text-base">
@@ -917,7 +920,7 @@ export default function AnalyticsPage() {
                             </span>
                           </div>
                           <div className="flex flex-col items-center p-3 bg-gradient-to-br from-muted to-secondary rounded-xl border border-border/50">
-                            <span className="text-xs text-gray-500 mb-1">
+                            <span className="text-xs text-muted-foreground mb-1">
                               Max Volume
                             </span>
                             <span className="font-bold text-sm md:text-base">
@@ -975,7 +978,7 @@ export default function AnalyticsPage() {
                         <Search size={28} className="text-default-400" />
                       </div>
                       <p className="text-xl font-semibold">No records found</p>
-                      <p className="text-gray-500 mt-2">
+                      <p className="text-muted-foreground mt-2">
                         No exercises match "{searchTerm}"
                       </p>
                       <Button
@@ -998,7 +1001,7 @@ export default function AnalyticsPage() {
                         <Trophy size={28} className="text-warning" />
                       </div>
                       <p className="text-xl font-semibold">No records yet</p>
-                      <p className="text-gray-500 mt-2 max-w-md mx-auto">
+                      <p className="text-muted-foreground mt-2 max-w-md mx-auto">
                         Complete workout sessions to start tracking your
                         personal records. Each time you lift a new maximum
                         weight, it will appear here.
@@ -1102,7 +1105,7 @@ export default function AnalyticsPage() {
                         <p className="text-xl font-semibold">
                           No volume data available
                         </p>
-                        <p className="text-gray-500 mt-2 max-w-md mx-auto">
+                        <p className="text-muted-foreground mt-2 max-w-md mx-auto">
                           Complete workout sessions to see your volume analysis.
                           This will help you track your overall training load
                           over time.

@@ -327,7 +327,7 @@ export default function ViewSession() {
 
       {/* Enhanced Session Details Card */}
       <Card className="mb-8 shadow-sm overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-primary-100/50 to-primary-300/30 dark:from-primary-900/40 dark:to-primary-800/20 pb-3">
+        <CardHeader className="bg-gradient-to-r from-primary/15 to-primary/5 border-b border-border/50 pb-3">
           <div className="flex justify-between w-full items-center">
             <h2 className="text-lg font-bold">Session Details</h2>
             <Chip
@@ -342,8 +342,8 @@ export default function ViewSession() {
         <CardBody className="gap-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-2.5">
-                <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="rounded-full bg-primary/15 p-2.5">
+                <Calendar className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <div className="text-sm text-default-500">Date</div>
@@ -359,8 +359,8 @@ export default function ViewSession() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-2.5">
-                <Clock className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="rounded-full bg-success/15 p-2.5">
+                <Clock className="h-5 w-5 text-success" />
               </div>
               <div>
                 <div className="text-sm text-default-500">Duration</div>
@@ -371,8 +371,8 @@ export default function ViewSession() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="rounded-full bg-purple-100 dark:bg-purple-900/30 p-2.5">
-                <Dumbbell className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <div className="rounded-full bg-muted p-2.5">
+                <Dumbbell className="h-5 w-5 text-foreground" />
               </div>
               <div>
                 <div className="text-sm text-default-500">Exercises</div>

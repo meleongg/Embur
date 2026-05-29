@@ -1,43 +1,54 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-
-type ThemeProviderProps = {
-  children: React.ReactNode;
-};
+import {
+  applyThemeToDocument,
+  readStoredTheme,
+  type Theme,
+} from "@/lib/theme";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 type ThemeProviderState = {
-  theme: string;
-  setTheme: (theme: string) => void;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  isReady: boolean;
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(
   undefined
 );
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<string>("light");
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>("light");
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Only check localStorage on mount, don't check system preference
-    const storedTheme = localStorage.getItem("theme");
-
-    if (storedTheme) {
-      setTheme(storedTheme);
+    const stored = readStoredTheme();
+    if (stored) {
+      setThemeState(stored);
+      applyThemeToDocument(stored);
     }
+    setIsReady(true);
   }, []);
 
-  useEffect(() => {
-    // Update the document class whenever theme changes
-    const root = document.documentElement;
-    const isDark = theme === "dark";
+  const setTheme = useCallback((next: Theme) => {
+    setThemeState(next);
+    applyThemeToDocument(next);
+  }, []);
 
-    root.classList.toggle("dark", isDark);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  const value = useMemo(
+    () => ({ theme, setTheme, isReady }),
+    [theme, setTheme, isReady]
+  );
 
   return (
-    <ThemeProviderContext.Provider value={{ theme, setTheme }}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   );

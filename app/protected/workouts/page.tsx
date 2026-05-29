@@ -127,7 +127,7 @@ const Actions = ({
       >
         <DropdownTrigger>
           <div
-            className="cursor-pointer p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="cursor-pointer p-1 rounded-full hover:bg-muted"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -220,7 +220,7 @@ const Actions = ({
                   Are you sure you want to delete{" "}
                   <span className="font-semibold">{workoutName}</span>?
                 </p>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   This action cannot be undone.
                 </p>
               </ModalBody>
@@ -550,7 +550,7 @@ export default function WorkoutsPage() {
                     <div>
                       <h3 className="text-lg font-semibold">{workout.name}</h3>
                       {workout.description && (
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                           {workout.description}
                         </p>
                       )}
@@ -603,7 +603,7 @@ export default function WorkoutsPage() {
           </>
         ) : (
           <div className="text-center py-16 border rounded-lg transition-all duration-300 ease-in">
-            <div className="flex flex-col items-center gap-3 text-gray-500">
+            <div className="flex flex-col items-center gap-3 text-muted-foreground">
               <Dumbbell className="w-10 h-10" />
               <p className="mb-4">No workouts found</p>
               <Button

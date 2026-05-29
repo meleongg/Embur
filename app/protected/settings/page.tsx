@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "@/components/theme-provider";
+import { themeFromDarkMode } from "@/lib/theme";
 import PageTitle from "@/components/ui/page-title";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -86,11 +87,13 @@ export default function SettingsPage() {
         .single();
 
       if (prefsData) {
+        const useDarkMode = prefsData.use_dark_mode ?? false;
         setPreferences({
           useMetric: prefsData.use_metric,
-          useDarkMode: theme === "dark", // Match the current theme
+          useDarkMode,
           defaultRestTimer: prefsData.default_rest_timer,
         });
+        setTheme(themeFromDarkMode(useDarkMode));
       } else {
         // Create default preferences if none exists
         await supabase.from("user_preferences").insert({
@@ -106,46 +109,33 @@ export default function SettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [theme]);
+  }, [setTheme]);
 
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
 
-  // Save preferences
-  const savePreferences = async () => {
-    try {
-      setIsSaving(true);
+  const persistPreference = async (
+    updates: {
+      use_metric?: boolean;
+      use_dark_mode?: boolean;
+      default_rest_timer?: number;
+    },
+    options?: { errorMessage?: string }
+  ) => {
+    if (!userProfile?.id) return;
 
-      // Show loading toast that will be updated with result
-      const toastId = toast.loading("Saving your preferences...");
+    const { error } = await supabase
+      .from("user_preferences")
+      .update(updates)
+      .eq("user_id", userProfile.id);
 
-      // Apply theme change globally
-      setTheme(preferences.useDarkMode ? "dark" : "light");
-
-      const { error } = await supabase
-        .from("user_preferences")
-        .update({
-          use_metric: preferences.useMetric,
-          use_dark_mode: preferences.useDarkMode,
-          default_rest_timer: preferences.defaultRestTimer,
-        })
-        .eq("user_id", userProfile.id);
-
-      if (error) throw error;
-
-      // Update the loading toast to success
-      toast.success("Your preferences have been saved", {
-        id: toastId,
-        icon: <Check className="h-4 w-4" />,
-      });
-    } catch (error) {
-      console.error("Error saving preferences:", error);
-      toast.error("Could not save preferences. Please try again.", {
-        description: error instanceof Error ? error.message : undefined,
-      });
-    } finally {
-      setIsSaving(false);
+    if (error) {
+      console.error("Error saving preference:", error);
+      toast.error(
+        options?.errorMessage ?? "Could not save preference. Please try again."
+      );
+      throw error;
     }
   };
 
@@ -310,13 +300,13 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="p-4 md:p-6 pb-16 space-y-6 w-full max-w-5xl mx-auto min-w-[320px]">
-        <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-6" />
+        <div className="h-8 w-32 bg-muted rounded animate-pulse mb-6" />
 
         {/* Tab skeleton */}
         <div className="border-b border-divider w-full">
           <div className="flex gap-4 mb-2">
-            <div className="h-10 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-10 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse opacity-60" />
+            <div className="h-10 w-28 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-28 bg-muted rounded animate-pulse opacity-60" />
           </div>
           <div className="h-0.5 w-28 bg-primary rounded-full mb-[-1px]" />
         </div>
@@ -326,7 +316,7 @@ export default function SettingsPage() {
           {[1, 2, 3].map((i) => (
             <Card key={i} className="shadow-sm overflow-hidden">
               <CardHeader className="flex flex-col items-start gap-2">
-                <div className="h-6 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-6 w-48 bg-muted rounded animate-pulse" />
               </CardHeader>
               <Divider />
               <CardBody className="space-y-6 px-4 md:px-6 py-5">
@@ -337,28 +327,28 @@ export default function SettingsPage() {
                 >
                   <div className="flex flex-col gap-2">
                     <div
-                      className="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                      className="h-4 w-28 bg-muted rounded animate-pulse"
                       style={{ animationDelay: `${i * 50}ms` }}
                     />
                     <div
-                      className="h-6 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                      className="h-6 w-full bg-muted rounded animate-pulse"
                       style={{ animationDelay: `${i * 75}ms` }}
                     />
                   </div>
 
                   <div className="flex flex-col gap-2">
                     <div
-                      className="h-4 w-36 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                      className="h-4 w-36 bg-muted rounded animate-pulse"
                       style={{ animationDelay: `${i * 100}ms` }}
                     />
                     <div
-                      className="h-6 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                      className="h-6 w-full bg-muted rounded animate-pulse"
                       style={{ animationDelay: `${i * 125}ms` }}
                     />
                   </div>
 
                   <div className="flex justify-end">
-                    <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-10 w-32 bg-muted rounded animate-pulse" />
                   </div>
                 </div>
               </CardBody>
@@ -426,11 +416,11 @@ export default function SettingsPage() {
               <CardBody className="space-y-6 px-4 md:px-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">Email Address</p>
+                    <p className="text-sm text-muted-foreground">Email Address</p>
                     <p className="font-medium">{userProfile?.email}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">Account Created</p>
+                    <p className="text-sm text-muted-foreground">Account Created</p>
                     <p className="font-medium">
                       {userProfile?.created_at
                         ? new Date(userProfile.created_at).toLocaleDateString()
@@ -597,7 +587,7 @@ export default function SettingsPage() {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                   <div className="space-y-1">
                     <p className="font-medium">Weight Units</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       Choose between metric (kg) and imperial (lbs)
                     </p>
                   </div>
@@ -607,10 +597,22 @@ export default function SettingsPage() {
                     startContent={<span className="text-sm">lbs</span>}
                     endContent={<span className="text-sm">kg</span>}
                     isSelected={preferences.useMetric}
-                    onValueChange={(isSelected) =>
-                      setPreferences({ ...preferences, useMetric: isSelected })
-                    }
-                    thumbIcon={<Weight className="text-gray-700" size={14} />}
+                    onValueChange={async (isSelected) => {
+                      setPreferences({ ...preferences, useMetric: isSelected });
+                      try {
+                        await persistPreference(
+                          { use_metric: isSelected },
+                          { errorMessage: "Units updated locally but failed to save" }
+                        );
+                        toast.success(
+                          `Weight units set to ${isSelected ? "kg" : "lbs"}`,
+                          { duration: 2000, icon: <Weight size={16} /> }
+                        );
+                      } catch {
+                        /* toast shown in persistPreference */
+                      }
+                    }}
+                    thumbIcon={<Weight className="text-foreground" size={14} />}
                     className="self-start sm:self-center"
                   />
                 </div>
@@ -618,37 +620,45 @@ export default function SettingsPage() {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                   <div className="space-y-1">
                     <p className="font-medium">Theme</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       Choose between light and dark mode
                     </p>
                   </div>
                   <Switch
                     size="lg"
                     color="primary"
-                    startContent={<Sun size={18} className="text-gray-700" />}
-                    endContent={<Moon size={18} className="text-gray-700" />}
+                    startContent={<Sun size={18} className="text-foreground" />}
+                    endContent={<Moon size={18} className="text-foreground" />}
                     isSelected={preferences.useDarkMode}
-                    onValueChange={(isSelected) => {
-                      // Apply theme change immediately
-                      setTheme(isSelected ? "dark" : "light");
-                      // Then update preferences state
+                    onValueChange={async (isSelected) => {
+                      setTheme(themeFromDarkMode(isSelected));
                       setPreferences({
                         ...preferences,
                         useDarkMode: isSelected,
                       });
 
-                      // Add a subtle toast notification
-                      toast.success(
-                        `${isSelected ? "Dark" : "Light"} theme activated`,
-                        {
-                          duration: 2000,
-                          icon: isSelected ? (
-                            <Moon size={16} />
-                          ) : (
-                            <Sun size={16} />
-                          ),
-                        }
-                      );
+                      try {
+                        await persistPreference(
+                          { use_dark_mode: isSelected },
+                          {
+                            errorMessage:
+                              "Theme updated locally but failed to save to account",
+                          }
+                        );
+                        toast.success(
+                          `${isSelected ? "Dark" : "Light"} theme activated`,
+                          {
+                            duration: 2000,
+                            icon: isSelected ? (
+                              <Moon size={16} />
+                            ) : (
+                              <Sun size={16} />
+                            ),
+                          }
+                        );
+                      } catch {
+                        /* toast shown in persistPreference */
+                      }
                     }}
                     className="self-start sm:self-center"
                   />
@@ -665,19 +675,38 @@ export default function SettingsPage() {
               <CardBody className="space-y-8 px-4 md:px-6">
                 <div className="flex flex-col space-y-2">
                   <p className="font-medium">Workout Time Estimation</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  <p className="text-sm text-muted-foreground mb-2">
                     Set your typical rest duration between sets. This helps
                     calculate more accurate workout time estimates.
                   </p>
                   <Select
                     label="Rest Duration"
                     selectedKeys={[preferences.defaultRestTimer.toString()]}
-                    onChange={(e) =>
+                    onChange={async (e) => {
+                      const seconds = parseInt(e.target.value, 10);
+                      if (Number.isNaN(seconds)) return;
+
                       setPreferences({
                         ...preferences,
-                        defaultRestTimer: parseInt(e.target.value),
-                      })
-                    }
+                        defaultRestTimer: seconds,
+                      });
+
+                      try {
+                        await persistPreference(
+                          { default_rest_timer: seconds },
+                          {
+                            errorMessage:
+                              "Rest timer updated locally but failed to save",
+                          }
+                        );
+                        toast.success("Rest timer updated", {
+                          duration: 2000,
+                          icon: <Clock size={16} />,
+                        });
+                      } catch {
+                        /* toast shown in persistPreference */
+                      }
+                    }}
                     startContent={
                       <Clock size={16} className="text-default-400" />
                     }
@@ -709,20 +738,6 @@ export default function SettingsPage() {
                 </div>
               </CardBody>
             </Card>
-
-            {/* Save Button - Better positioning for mobile */}
-            <div className="flex justify-end sticky bottom-4 pt-2">
-              <Button
-                color="primary"
-                isLoading={isSaving}
-                onPress={savePreferences}
-                startContent={<Save size={16} />}
-                className="w-full sm:w-auto h-12 shadow-md"
-                size="lg"
-              >
-                Save Preferences
-              </Button>
-            </div>
           </div>
         </Tab>
       </Tabs>

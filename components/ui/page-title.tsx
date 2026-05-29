@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@nextui-org/react";
 import { Settings } from "lucide-react";
 import { useRouter } from "next/navigation";

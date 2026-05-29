@@ -1080,7 +1080,7 @@ export default function WorkoutSession() {
   if (authError) {
     return (
       <div className="p-8">
-        <h2 className="text-xl font-bold text-red-500">Authentication Error</h2>
+        <h2 className="text-xl font-bold text-destructive">Authentication Error</h2>
         <p className="mt-2">{authError}</p>
         <Button
           color="primary"
@@ -1230,7 +1230,7 @@ export default function WorkoutSession() {
     );
   }
 
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (error) return <div className="text-destructive">{error}</div>;
   if (!workout) return <div>Workout not found</div>;
 
   return (
@@ -1314,7 +1314,7 @@ export default function WorkoutSession() {
           {/* Add this progress indicator above the exercise cards */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-500">Overall progress</span>
+              <span className="text-sm text-muted-foreground">Overall progress</span>
               <span className="text-sm font-semibold">
                 {Math.round(
                   (sessionExercises.reduce(
@@ -1334,7 +1334,7 @@ export default function WorkoutSession() {
                 %
               </span>
             </div>
-            <div className="w-full bg-default-200 rounded-full h-2.5 dark:bg-gray-700">
+            <div className="w-full bg-secondary rounded-full h-2.5">
               <div
                 className="bg-primary h-2.5 rounded-full transition-all duration-300"
                 style={{
@@ -1364,7 +1364,7 @@ export default function WorkoutSession() {
             <h3 className="font-semibold mb-2">Description</h3>
             <p>{workout.description || "No description provided."}</p>
 
-            <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
+            <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
               <div>Session started: {formatSessionDate(sessionStartTime)}</div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
@@ -1376,7 +1376,7 @@ export default function WorkoutSession() {
           {/* Exercise cards */}
           {sessionExercises.length === 0 ? (
             <div className="text-center py-12 border rounded-lg">
-              <div className="flex flex-col items-center gap-3 text-gray-500">
+              <div className="flex flex-col items-center gap-3 text-muted-foreground">
                 <FileText className="h-10 w-10" />
                 <p>No exercises added to this session</p>
                 <Button size="sm" color="primary" onPress={handleOpenModal}>
@@ -1458,7 +1458,7 @@ export default function WorkoutSession() {
                     </h3>
 
                     <div className="ml-2 flex items-center gap-2">
-                      <div className="w-16 bg-default-200 rounded-full h-1.5 dark:bg-gray-700">
+                      <div className="w-16 bg-secondary rounded-full h-1.5">
                         <div
                           className="bg-primary h-1.5 rounded-full transition-all duration-300"
                           style={{
@@ -1472,7 +1472,7 @@ export default function WorkoutSession() {
                           }}
                         ></div>
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-muted-foreground">
                         {
                           exercise.actualSets.filter((set) => set.completed)
                             .length
@@ -1483,7 +1483,7 @@ export default function WorkoutSession() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                       Target: {exercise.targetSets} sets × {exercise.targetReps}{" "}
                       reps @ {displayWeight(exercise.targetWeight, useMetric)}
                     </div>
@@ -1518,7 +1518,7 @@ export default function WorkoutSession() {
                       table: "min-w-full",
                     }}
                   >
-                    <TableHeader className="sticky top-0 z-10 bg-white dark:bg-gray-900">
+                    <TableHeader className="sticky top-0 z-10 bg-card">
                       <TableColumn className="w-[80px] min-w-[80px]">
                         SET
                       </TableColumn>
@@ -2131,7 +2131,7 @@ export default function WorkoutSession() {
                                     classNames={{
                                       input: "text-center font-medium pr-0",
                                       inputWrapper:
-                                        "bg-white dark:bg-default-100 hover:border-primary focus-within:border-primary min-h-unit-10",
+                                        "bg-card hover:border-primary focus-within:border-primary min-h-unit-10",
                                       innerWrapper: "gap-0",
                                     }}
                                     value={update.sets.toString()}
@@ -2167,7 +2167,7 @@ export default function WorkoutSession() {
                                     classNames={{
                                       input: "text-center font-medium pr-0",
                                       inputWrapper:
-                                        "bg-white dark:bg-default-100 hover:border-primary focus-within:border-primary min-h-unit-10",
+                                        "bg-card hover:border-primary focus-within:border-primary min-h-unit-10",
                                       innerWrapper: "gap-0",
                                     }}
                                     value={update.reps.toString()}
@@ -2203,7 +2203,7 @@ export default function WorkoutSession() {
                                     classNames={{
                                       input: "text-center font-medium pr-0",
                                       inputWrapper:
-                                        "bg-white dark:bg-default-100 hover:border-primary focus-within:border-primary min-h-unit-10",
+                                        "bg-card hover:border-primary focus-within:border-primary min-h-unit-10",
                                       innerWrapper: "gap-0",
                                     }}
                                     value={convertFromStorageUnit(
@@ -2401,7 +2401,7 @@ export default function WorkoutSession() {
                   <TableBody
                     emptyContent={
                       <div className="py-5">
-                        <p className="text-center text-gray-500">
+                        <p className="text-center text-muted-foreground">
                           No exercises found
                         </p>
                       </div>
@@ -2504,7 +2504,7 @@ export default function WorkoutSession() {
 
               <ModalBody className="gap-5 py-2">
                 {/* Note section with improved styling */}
-                <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 p-3 rounded-lg text-sm">
+                <div className="alert-warning">
                   <strong>NOTE:</strong> Creating a custom exercise here will
                   add it to your Exercise Library.
                 </div>

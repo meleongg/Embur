@@ -213,7 +213,7 @@ export default function ViewWorkout() {
   if (error) {
     return (
       <div className="p-4 flex flex-col items-center justify-center h-64">
-        <div className="text-red-500 text-center mb-4">{error}</div>
+        <div className="text-destructive text-center mb-4">{error}</div>
         <Button color="primary" onPress={() => window.location.reload()}>
           Try Again
         </Button>
@@ -244,7 +244,7 @@ export default function ViewWorkout() {
 
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
         <div>
-          <div className="text-sm text-gray-500 flex items-center gap-2">
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span>
               Created {new Date(workout.created_at).toLocaleDateString()}
@@ -284,7 +284,7 @@ export default function ViewWorkout() {
             {workout.description ? (
               <p className="mt-2">{workout.description}</p>
             ) : (
-              <p className="mt-2 text-gray-500 italic">
+              <p className="mt-2 text-muted-foreground italic">
                 No description provided
               </p>
             )}
@@ -293,7 +293,7 @@ export default function ViewWorkout() {
           <Divider orientation="vertical" className="hidden md:block" />
 
           <div className="p-6 md:w-1/3 bg-default-50 dark:bg-default-100">
-            <h3 className="font-semibold text-sm uppercase text-gray-500 mb-3">
+            <h3 className="font-semibold text-sm uppercase text-muted-foreground mb-3">
               Workout Summary
             </h3>
 
@@ -379,7 +379,7 @@ export default function ViewWorkout() {
                       </div>
 
                       {/* Calculate total sets and volume for this category */}
-                      <div className="flex gap-2 text-sm text-gray-500">
+                      <div className="flex gap-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <span>
                             {typedExercises.reduce(
@@ -433,7 +433,7 @@ export default function ViewWorkout() {
                                   {item.exercise.name}
                                 </div>
                                 {item.exercise.description && (
-                                  <div className="text-xs text-gray-500 mt-1 line-clamp-1">
+                                  <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
                                     {item.exercise.description}
                                   </div>
                                 )}
@@ -507,7 +507,7 @@ export default function ViewWorkout() {
               </Table>
             ) : (
               <div className="text-center py-12 border rounded-lg">
-                <div className="flex flex-col items-center gap-3 text-gray-500">
+                <div className="flex flex-col items-center gap-3 text-muted-foreground">
                   <HistoryIcon className="w-10 h-10" />
                   <p>No workout history yet</p>
                   <Button color="primary" size="sm" onPress={startWorkout}>

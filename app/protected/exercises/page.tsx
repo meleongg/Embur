@@ -404,7 +404,7 @@ export default function ExerciseLibraryPage() {
               }
             />
             {searchPerformed && (
-              <div className="text-xs text-gray-500 mt-1.5">
+              <div className="text-xs text-muted-foreground mt-1.5">
                 {filteredExercises.length}{" "}
                 {filteredExercises.length === 1 ? "result" : "results"} found
               </div>
@@ -441,7 +441,7 @@ export default function ExerciseLibraryPage() {
                   {
                     key: "category-header",
                     label: "Categories",
-                    className: "text-gray-400",
+                    className: "text-muted-foreground",
                   },
                   ...categories.map((category) => ({
                     key: String(category.id),
@@ -522,7 +522,7 @@ export default function ExerciseLibraryPage() {
                 <div className="flex items-center gap-2 mb-4">
                   <Skeleton className="h-6 w-32 rounded-lg" />
                   <Skeleton className="h-4 w-8 rounded-lg" />
-                  <div className="h-[1px] bg-gray-200 dark:bg-gray-700 flex-grow"></div>
+                  <div className="h-[1px] bg-muted flex-grow"></div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...Array(3)].map((_, index) => (
@@ -548,18 +548,18 @@ export default function ExerciseLibraryPage() {
           </div>
         ) : filteredExercises.length === 0 ? (
           // Enhanced empty state
-          <div className="text-center p-12 border rounded-xl bg-gray-50 dark:bg-gray-800/50">
-            <div className="inline-flex justify-center mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-full">
+          <div className="text-center p-12 border rounded-xl bg-muted/50">
+            <div className="inline-flex justify-center mb-4 p-3 bg-muted rounded-full">
               {searchTerm ? (
-                <SearchIcon size={28} className="text-gray-500" />
+                <SearchIcon size={28} className="text-muted-foreground" />
               ) : (
-                <BookOpenCheckIcon size={28} className="text-gray-500" />
+                <BookOpenCheckIcon size={28} className="text-muted-foreground" />
               )}
             </div>
             <p className="text-xl font-medium mb-2">
               {searchTerm ? "No matching exercises" : "No exercises found"}
             </p>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               {searchTerm
                 ? `We couldn't find any exercises matching "${searchTerm}"`
                 : "Your exercise library appears to be empty"}
@@ -594,7 +594,7 @@ export default function ExerciseLibraryPage() {
               <div className="animate-fadeIn">
                 <div className="flex items-center gap-2 mb-4">
                   <LayersIcon size={18} className="text-primary" />
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     {filteredExercises.length}
                     {filteredExercises.length === 1
                       ? " exercise"
@@ -622,10 +622,10 @@ export default function ExerciseLibraryPage() {
                 >
                   <div className="flex items-center gap-2 sticky top-0 bg-background/90 backdrop-blur-md z-10 py-2">
                     <h2 className="text-lg font-semibold">{category.name}</h2>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       ({category.exercises.length})
                     </span>
-                    <div className="h-[1px] bg-gray-200 dark:bg-gray-700 flex-grow"></div>
+                    <div className="h-[1px] bg-muted flex-grow"></div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

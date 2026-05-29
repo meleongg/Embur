@@ -1,16 +1,9 @@
-import Link from "next/link";
+import LegalPageLayout from "@/components/legal-page-layout";
 
 export default function PrivacyPolicy() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Simple header instead of PageTitle component */}
-      <h1 className="font-bold text-2xl sm:text-3xl md:text-4xl mb-6">
-        Privacy Policy
-      </h1>
-
-      <div className="bg-card p-6 rounded-xl border border-border/60 shadow-sm">
-        <div className="prose max-w-none text-foreground">
-          <p className="text-muted-foreground mb-8">Last updated: March 21, 2025</p>
+    <LegalPageLayout title="Privacy Policy">
+      <p className="text-muted-foreground mb-8">Last updated: March 21, 2025</p>
 
           <section className="mb-8">
             <h2 className="text-xl font-bold mb-4">1. Introduction</h2>
@@ -155,14 +148,6 @@ export default function PrivacyPolicy() {
               this page and updating the "Last updated" date at the top.
             </p>
           </section>
-
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <Link href="/" className="text-primary hover:underline">
-              Return to Home
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
+    </LegalPageLayout>
   );
 }

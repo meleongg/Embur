@@ -354,7 +354,7 @@ export default function SessionsPage() {
 
       {/* Month Filter */}
       <div className="relative mb-6">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border">
           {isLoading ? (
             <div className="flex gap-2">
               {Array(4)

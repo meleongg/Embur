@@ -103,6 +103,10 @@ const config = {
           colors: {
             background: "#FAFAF9",
             foreground: "#3D405B",
+            content1: "#FFFFFF",
+            content2: "#F4F4F5",
+            content3: "#E4E4E7",
+            content4: "#D4D4D8",
             primary: {
               DEFAULT: "#E07A5F",
               foreground: "#FFFFFF",
@@ -115,6 +119,10 @@ const config = {
           colors: {
             background: "#18181B",
             foreground: "#FAFAFA",
+            content1: "#27272A",
+            content2: "#3F3F46",
+            content3: "#52525B",
+            content4: "#71717A",
             primary: {
               DEFAULT: "#F4A261",
               foreground: "#18181B",
