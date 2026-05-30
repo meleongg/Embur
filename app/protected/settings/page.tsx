@@ -423,11 +423,15 @@ export default function SettingsPage() {
               <CardBody className="space-y-6 px-4 md:px-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Email Address</p>
+                    <p className="text-sm text-muted-foreground">
+                      Email Address
+                    </p>
                     <p className="font-medium">{userProfile?.email}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Account Created</p>
+                    <p className="text-sm text-muted-foreground">
+                      Account Created
+                    </p>
                     <p className="font-medium">
                       {userProfile?.created_at
                         ? new Date(userProfile.created_at).toLocaleDateString()
@@ -609,7 +613,10 @@ export default function SettingsPage() {
                       try {
                         await persistPreference(
                           { use_metric: isSelected },
-                          { errorMessage: "Units updated locally but failed to save" }
+                          {
+                            errorMessage:
+                              "Units updated locally but failed to save",
+                          }
                         );
                       } catch {
                         /* toast shown in persistPreference */

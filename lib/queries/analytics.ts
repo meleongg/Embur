@@ -86,8 +86,7 @@ export async function fetchExerciseProgress(
     if (timeframe === "week") cutoff.setDate(cutoff.getDate() - 7);
     else if (timeframe === "month") cutoff.setMonth(cutoff.getMonth() - 1);
     else if (timeframe === "3months") cutoff.setMonth(cutoff.getMonth() - 3);
-    else if (timeframe === "year")
-      cutoff.setFullYear(cutoff.getFullYear() - 1);
+    else if (timeframe === "year") cutoff.setFullYear(cutoff.getFullYear() - 1);
 
     query = query.gte("session.started_at", cutoff.toISOString());
   }

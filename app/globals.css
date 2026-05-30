@@ -95,8 +95,8 @@ body {
 }
 
 .transition-colors {
-  transition-property: background-color, color, border-color,
-    text-decoration-color, fill, stroke;
+  transition-property:
+    background-color, color, border-color, text-decoration-color, fill, stroke;
   transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }

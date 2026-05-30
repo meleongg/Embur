@@ -41,7 +41,9 @@ export default async function Signup(props: {
             <Dumbbell className="h-6 w-6 text-primary-foreground" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Create an account</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Create an account
+        </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Start your fitness journey with FitFlash
         </p>

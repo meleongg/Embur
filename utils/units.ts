@@ -5,11 +5,11 @@ const KG_TO_LBS = 2.20462262185;
 // This helps us "snap" to standard weights when converting back from kg
 const COMMON_LBS_WEIGHTS = [
   2.5, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-  95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165,
-  170, 175, 180, 185, 190, 195, 200, 205, 210, 215, 220, 225, 230, 235, 240,
-  245, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 315, 335, 350,
-  365, 385, 400, 405, 425, 450, 475, 495, 500, 515, 545, 585, 600, 635, 675,
-  700, 725, 765, 800, 855, 900, 945, 1000,
+  95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170,
+  175, 180, 185, 190, 195, 200, 205, 210, 215, 220, 225, 230, 235, 240, 245,
+  250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 315, 335, 350, 365,
+  385, 400, 405, 425, 450, 475, 495, 500, 515, 545, 585, 600, 635, 675, 700,
+  725, 765, 800, 855, 900, 945, 1000,
 ];
 
 /**
@@ -174,14 +174,16 @@ export const displayVolume = (
   if (isNaN(numVolume) || numVolume === 0) return "-";
 
   // If not already converted, convert from kg (use raw conversion, no snapping)
-  const convertedVolume = isAlreadyConverted 
-    ? numVolume 
-    : (useMetric ? numVolume : kgToLbs(numVolume, false));
-  
+  const convertedVolume = isAlreadyConverted
+    ? numVolume
+    : useMetric
+      ? numVolume
+      : kgToLbs(numVolume, false);
+
   // For large numbers, round to whole numbers to avoid messy decimals
   if (convertedVolume >= 1000) {
     return `${Math.round(convertedVolume).toLocaleString()} ${useMetric ? "kg" : "lbs"}`;
   }
-  
+
   return `${roundTo(convertedVolume, 1)} ${useMetric ? "kg" : "lbs"}`;
 };

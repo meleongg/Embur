@@ -509,7 +509,10 @@ export default function ExerciseLibraryPage() {
               {searchTerm ? (
                 <SearchIcon size={28} className="text-muted-foreground" />
               ) : (
-                <BookOpenCheckIcon size={28} className="text-muted-foreground" />
+                <BookOpenCheckIcon
+                  size={28}
+                  className="text-muted-foreground"
+                />
               )}
             </div>
             <p className="text-xl font-medium mb-2">

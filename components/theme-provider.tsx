@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  applyThemeToDocument,
-  readStoredTheme,
-  type Theme,
-} from "@/lib/theme";
+import { applyThemeToDocument, readStoredTheme, type Theme } from "@/lib/theme";
 import {
   createContext,
   useCallback,

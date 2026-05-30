@@ -11,7 +11,9 @@ export default async function ResetPassword(props: {
   const searchParams = await props.searchParams;
   return (
     <div className="max-w-md mx-auto w-full">
-      <h1 className="text-2xl font-bold text-foreground mb-6">Reset password</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">
+        Reset password
+      </h1>
       <Card className="border border-border/60 shadow-sm">
         <CardBody className="gap-4 p-6">
           <p className="text-sm text-muted-foreground">

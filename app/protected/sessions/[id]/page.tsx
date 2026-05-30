@@ -31,7 +31,12 @@ export default function ViewSession() {
 
   const { useMetric, isLoading: isLoadingUnits } = useUnitPreference();
 
-  const { data, isLoading, isError, error: queryError } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    error: queryError,
+  } = useQuery({
     queryKey: queryKeys.sessions.detail(sessionId),
     queryFn: () => fetchSessionDetail(sessionId),
     enabled: Boolean(sessionId),
@@ -65,42 +70,45 @@ export default function ViewSession() {
     const durationSeconds = Math.floor((durationMs % (1000 * 60)) / 1000);
 
     // Group exercises - use a unique key that includes exercise ID
-    const exerciseGroups = sessionExercises.reduce((groups: any, exercise: any) => {
-      const exerciseName = exercise.exercise.name;
-      const exerciseId = exercise.exercise.id;
+    const exerciseGroups = sessionExercises.reduce(
+      (groups: any, exercise: any) => {
+        const exerciseName = exercise.exercise.name;
+        const exerciseId = exercise.exercise.id;
 
-      // Use a consistent key for grouping
-      const groupKey = exerciseId;
+        // Use a consistent key for grouping
+        const groupKey = exerciseId;
 
-      if (!groups[groupKey]) {
-        groups[groupKey] = {
-          exerciseName,
-          exerciseId,
-          category: exercise.exercise.category?.name || "Uncategorized",
-          sets: [],
-          totalVolume: 0,
-        };
-      }
+        if (!groups[groupKey]) {
+          groups[groupKey] = {
+            exerciseName,
+            exerciseId,
+            category: exercise.exercise.category?.name || "Uncategorized",
+            sets: [],
+            totalVolume: 0,
+          };
+        }
 
-      const weight = exercise.weight || 0;
-      const reps = exercise.reps || 0;
-      const setVolume = weight * reps;
+        const weight = exercise.weight || 0;
+        const reps = exercise.reps || 0;
+        const setVolume = weight * reps;
 
-      // Add this set to the exercise group - ensure each set gets added
-      groups[groupKey].totalVolume += setVolume;
+        // Add this set to the exercise group - ensure each set gets added
+        groups[groupKey].totalVolume += setVolume;
 
-      // Make sure to add each individual set record
-      groups[groupKey].sets.push({
-        setNumber: exercise.set_number,
-        reps,
-        weight,
-        volume: setVolume,
-        // Add unique ID to ensure we don't lose sets with same set_number
-        id: exercise.id,
-      });
+        // Make sure to add each individual set record
+        groups[groupKey].sets.push({
+          setNumber: exercise.set_number,
+          reps,
+          weight,
+          volume: setVolume,
+          // Add unique ID to ensure we don't lose sets with same set_number
+          id: exercise.id,
+        });
 
-      return groups;
-    }, {});
+        return groups;
+      },
+      {}
+    );
 
     // Sort sets by set_number for each exercise
     Object.values(exerciseGroups).forEach((group: any) => {

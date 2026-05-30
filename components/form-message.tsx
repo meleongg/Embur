@@ -9,9 +9,7 @@ export function FormMessage({ message }: { message: Message }) {
       {"success" in message && (
         <div className="alert-success">{message.success}</div>
       )}
-      {"error" in message && (
-        <div className="alert-error">{message.error}</div>
-      )}
+      {"error" in message && <div className="alert-error">{message.error}</div>}
       {"message" in message && (
         <div className="alert-info">{message.message}</div>
       )}

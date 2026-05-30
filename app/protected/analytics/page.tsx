@@ -53,71 +53,13 @@ import {
 } from "recharts";
 import { useTheme } from "@/components/theme-provider";
 import { getChartColors } from "@/lib/chart-colors";
+import {
+  buildExerciseChartData,
+  getProgressChartXAxisSettings,
+} from "@/lib/chart-data";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 const EMPTY_LIST: never[] = [];
-
-function buildExerciseChartData(
-  exerciseId: string,
-  sessionsData: any[],
-  timeframe: string,
-  useMetric: boolean
-) {
-  const exerciseSessions = sessionsData.filter(
-    (s) => s.exercise_id === exerciseId
-  );
-
-  const groupedByDate: { [key: string]: any[] } = {};
-  exerciseSessions.forEach((session) => {
-    const date = new Date(session.session?.started_at)
-      .toISOString()
-      .split("T")[0];
-    if (!groupedByDate[date]) {
-      groupedByDate[date] = [];
-    }
-    groupedByDate[date].push(session);
-  });
-
-  let filteredDates = Object.keys(groupedByDate);
-  if (timeframe !== "all") {
-    const now = new Date();
-    const cutoff = new Date();
-
-    if (timeframe === "week") {
-      cutoff.setDate(now.getDate() - 7);
-    } else if (timeframe === "month") {
-      cutoff.setMonth(now.getMonth() - 1);
-    } else if (timeframe === "3months") {
-      cutoff.setMonth(now.getMonth() - 3);
-    } else if (timeframe === "year") {
-      cutoff.setFullYear(now.getFullYear() - 1);
-    }
-
-    filteredDates = filteredDates.filter((date) => new Date(date) >= cutoff);
-  }
-
-  return filteredDates
-    .map((date) => {
-      const sessions = groupedByDate[date];
-      const maxWeightKg = Math.max(...sessions.map((s: any) => s.weight));
-      const totalVolumeKg = sessions.reduce(
-        (sum: number, s: any) => sum + s.reps * s.weight,
-        0
-      );
-      const maxWeight = useMetric ? maxWeightKg : kgToLbs(maxWeightKg);
-      const totalVolume = useMetric ? totalVolumeKg : kgToLbs(totalVolumeKg);
-
-      return {
-        date,
-        maxWeight,
-        totalVolume,
-        formattedDate: new Date(date).toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-        }),
-      };
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-}
 
 function buildVolumeChartData(sessionsData: any[]) {
   const volumeByExercise = sessionsData.reduce(
@@ -166,6 +108,8 @@ export default function AnalyticsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState("");
   const [isExerciseDropdownOpen, setIsExerciseDropdownOpen] = useState(false);
+  const isCompactChart = useMediaQuery("(max-width: 767px)");
+  const isNarrowChart = useMediaQuery("(max-width: 639px)");
 
   const {
     data: summary,
@@ -200,8 +144,7 @@ export default function AnalyticsPage() {
     return exercise ? exercise.name : "";
   };
 
-  const progressEnabled =
-    Boolean(selectedExercise) && activeTab === "progress";
+  const progressEnabled = Boolean(selectedExercise) && activeTab === "progress";
 
   const {
     data: progressRows,
@@ -212,8 +155,7 @@ export default function AnalyticsPage() {
       selectedExercise ?? "",
       selectedTimeframe
     ),
-    queryFn: () =>
-      fetchExerciseProgress(selectedExercise!, selectedTimeframe),
+    queryFn: () => fetchExerciseProgress(selectedExercise!, selectedTimeframe),
     enabled: progressEnabled,
   });
 
@@ -235,13 +177,17 @@ export default function AnalyticsPage() {
     }
   }, [progressError]);
 
-  const exerciseData = useMemo(() => {
+  const progressChart = useMemo(() => {
     if (
       !selectedExercise ||
       activeTab !== "progress" ||
       !progressRows?.length
     ) {
-      return EMPTY_LIST;
+      return {
+        points: EMPTY_LIST,
+        bucket: "day" as const,
+        bucketLabel: "",
+      };
     }
 
     return buildExerciseChartData(
@@ -250,13 +196,13 @@ export default function AnalyticsPage() {
       selectedTimeframe,
       useMetric
     );
-  }, [
-    selectedExercise,
-    activeTab,
-    progressRows,
-    selectedTimeframe,
-    useMetric,
-  ]);
+  }, [selectedExercise, activeTab, progressRows, selectedTimeframe, useMetric]);
+
+  const exerciseData = progressChart.points;
+  const progressXAxis = getProgressChartXAxisSettings(
+    exerciseData.length,
+    isCompactChart
+  );
 
   const volumeData = useMemo(() => {
     if (activeTab !== "volume" || !volumeRows?.length) {
@@ -439,48 +385,49 @@ export default function AnalyticsPage() {
                     {isExerciseDropdownOpen &&
                       normalizedExerciseSearch &&
                       filteredExercises.length > 0 && (
-                      <div
-                        className="absolute z-50 mt-1 w-full bg-background border border-default-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                        role="listbox"
-                        aria-label="Exercise search results"
-                      >
-                        <ul className="py-1">
-                          {filteredExercises.map((exercise) => (
-                            <li
-                              key={exercise.id}
-                              role="option"
-                              aria-selected={selectedExercise === exercise.id}
-                              className="px-3 py-2 hover:bg-default-100 cursor-pointer flex items-center justify-between"
-                              onMouseDown={() => {
-                                handleExerciseChange(exercise.id);
-                                setExerciseSearchTerm(exercise.name);
-                                setIsExerciseDropdownOpen(false);
-                              }}
-                            >
-                              <div className="flex items-center">
-                                <Dumbbell
-                                  size={14}
-                                  className="mr-2 text-default-500"
-                                />
-                                <span>{exercise.name}</span>
-                              </div>
-                              {getExerciseCategoryName(exercise) && (
-                                <span className="text-xs text-default-400">
-                                  {getExerciseCategoryName(exercise)}
-                                </span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                        <div
+                          className="absolute z-50 mt-1 w-full bg-background border border-default-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                          role="listbox"
+                          aria-label="Exercise search results"
+                        >
+                          <ul className="py-1">
+                            {filteredExercises.map((exercise) => (
+                              <li
+                                key={exercise.id}
+                                role="option"
+                                aria-selected={selectedExercise === exercise.id}
+                                className="px-3 py-2 hover:bg-default-100 cursor-pointer flex items-center justify-between"
+                                onMouseDown={() => {
+                                  handleExerciseChange(exercise.id);
+                                  setExerciseSearchTerm(exercise.name);
+                                  setIsExerciseDropdownOpen(false);
+                                }}
+                              >
+                                <div className="flex items-center">
+                                  <Dumbbell
+                                    size={14}
+                                    className="mr-2 text-default-500"
+                                  />
+                                  <span>{exercise.name}</span>
+                                </div>
+                                {getExerciseCategoryName(exercise) && (
+                                  <span className="text-xs text-default-400">
+                                    {getExerciseCategoryName(exercise)}
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
 
                     {isExerciseDropdownOpen &&
                       normalizedExerciseSearch &&
                       filteredExercises.length === 0 && (
                         <div className="absolute z-50 mt-1 w-full bg-background border border-default-200 rounded-lg shadow-lg p-4 text-center">
                           <p className="text-default-500">
-                            No exercises match &ldquo;{exerciseSearchTerm.trim()}
+                            No exercises match &ldquo;
+                            {exerciseSearchTerm.trim()}
                             &rdquo;
                           </p>
                         </div>
@@ -581,6 +528,11 @@ export default function AnalyticsPage() {
                         </div>
                         <p className="text-small text-default-500">
                           Maximum weight used per workout session
+                          {progressChart.bucket !== "day" && (
+                            <span className="block text-xs text-muted-foreground mt-1">
+                              {progressChart.bucketLabel}
+                            </span>
+                          )}
                         </p>
                       </CardHeader>
                       <Divider className="my-2" />
@@ -589,7 +541,11 @@ export default function AnalyticsPage() {
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
                             data={exerciseData}
-                            margin={{ left: 10, right: 10, bottom: 10 }}
+                            margin={{
+                              left: 10,
+                              right: 10,
+                              bottom: progressXAxis.bottom,
+                            }}
                           >
                             <CartesianGrid
                               strokeDasharray="3 3"
@@ -597,8 +553,12 @@ export default function AnalyticsPage() {
                             />
                             <XAxis
                               dataKey="formattedDate"
-                              tick={{ fontSize: 11 }}
-                              interval={window.innerWidth < 768 ? 2 : 0}
+                              tick={progressXAxis.tick}
+                              interval={progressXAxis.interval}
+                              angle={progressXAxis.angle}
+                              textAnchor={progressXAxis.textAnchor}
+                              height={progressXAxis.height}
+                              tickMargin={8}
                               axisLine={false}
                             />
                             <YAxis
@@ -619,7 +579,12 @@ export default function AnalyticsPage() {
                                 `${roundTo(Number(value), 1)} ${useMetric ? "kg" : "lbs"}`,
                                 "Max Weight",
                               ]}
-                              labelFormatter={(date) => `Date: ${date}`}
+                              labelFormatter={(_, items) => {
+                                const point = items?.[0]?.payload as
+                                  | { tooltipLabel?: string }
+                                  | undefined;
+                                return point?.tooltipLabel ?? "";
+                              }}
                             />
                             <Line
                               type="monotone"
@@ -627,7 +592,11 @@ export default function AnalyticsPage() {
                               name="Max Weight"
                               stroke={chartColors.primary}
                               strokeWidth={3}
-                              dot={{ r: 5, strokeWidth: 2 }}
+                              dot={
+                                exerciseData.length <= 16
+                                  ? { r: 5, strokeWidth: 2 }
+                                  : false
+                              }
                               activeDot={{ r: 7 }}
                             />
                           </LineChart>
@@ -658,6 +627,11 @@ export default function AnalyticsPage() {
                         </div>
                         <p className="text-small text-default-500">
                           Total workout volume per session
+                          {progressChart.bucket !== "day" && (
+                            <span className="block text-xs text-muted-foreground mt-1">
+                              {progressChart.bucketLabel}
+                            </span>
+                          )}
                         </p>
                       </CardHeader>
                       <Divider className="my-2" />
@@ -665,7 +639,11 @@ export default function AnalyticsPage() {
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
                             data={exerciseData}
-                            margin={{ left: 10, right: 10, bottom: 10 }}
+                            margin={{
+                              left: 10,
+                              right: 10,
+                              bottom: progressXAxis.bottom,
+                            }}
                           >
                             <CartesianGrid
                               strokeDasharray="3 3"
@@ -673,8 +651,12 @@ export default function AnalyticsPage() {
                             />
                             <XAxis
                               dataKey="formattedDate"
-                              tick={{ fontSize: 11 }}
-                              interval={window.innerWidth < 768 ? 2 : 0}
+                              tick={progressXAxis.tick}
+                              interval={progressXAxis.interval}
+                              angle={progressXAxis.angle}
+                              textAnchor={progressXAxis.textAnchor}
+                              height={progressXAxis.height}
+                              tickMargin={8}
                               axisLine={false}
                             />
                             <YAxis
@@ -695,7 +677,12 @@ export default function AnalyticsPage() {
                                 displayVolume(Number(value), useMetric, true),
                                 "Total Volume",
                               ]}
-                              labelFormatter={(date) => `Date: ${date}`}
+                              labelFormatter={(_, items) => {
+                                const point = items?.[0]?.payload as
+                                  | { tooltipLabel?: string }
+                                  | undefined;
+                                return point?.tooltipLabel ?? "";
+                              }}
                             />
                             <Line
                               type="monotone"
@@ -703,7 +690,11 @@ export default function AnalyticsPage() {
                               name="Volume"
                               stroke={chartColors.success}
                               strokeWidth={3}
-                              dot={{ r: 5, strokeWidth: 2 }}
+                              dot={
+                                exerciseData.length <= 16
+                                  ? { r: 5, strokeWidth: 2 }
+                                  : false
+                              }
                               activeDot={{ r: 7 }}
                             />
                           </LineChart>
@@ -967,12 +958,12 @@ export default function AnalyticsPage() {
                         <YAxis
                           dataKey="name"
                           type="category"
-                          width={window.innerWidth < 640 ? 100 : 150}
+                          width={isNarrowChart ? 100 : 150}
                           tick={{
-                            fontSize: window.innerWidth < 640 ? 10 : 12,
+                            fontSize: isNarrowChart ? 10 : 12,
                           }}
                           tickFormatter={(value) =>
-                            window.innerWidth < 480 && value.length > 12
+                            isNarrowChart && value.length > 12
                               ? `${value.substring(0, 10)}...`
                               : value
                           }
@@ -990,7 +981,7 @@ export default function AnalyticsPage() {
                           name={`Volume (${useMetric ? "kg" : "lbs"})`}
                           fill={chartColors.primary}
                           radius={[0, 4, 4, 0]}
-                          barSize={window.innerWidth < 640 ? 15 : 20}
+                          barSize={isNarrowChart ? 15 : 20}
                           animationDuration={1000}
                         />
                       </BarChart>

@@ -43,13 +43,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const Actions = ({
-  id,
-  workoutName,
-}: {
-  id: string;
-  workoutName: string;
-}) => {
+const Actions = ({ id, workoutName }: { id: string; workoutName: string }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const supabase = createClient();
@@ -441,10 +435,7 @@ export default function WorkoutsPage() {
                       }}
                       style={{ pointerEvents: "auto" }}
                     >
-                      <Actions
-                        id={workout.id}
-                        workoutName={workout.name}
-                      />
+                      <Actions id={workout.id} workoutName={workout.name} />
                     </div>
                   </div>
 

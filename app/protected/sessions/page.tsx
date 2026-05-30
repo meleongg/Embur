@@ -123,9 +123,7 @@ export default function SessionsPage() {
       return;
     }
 
-    const allMonths = sessions.map((s) =>
-      getMonthName(new Date(s.started_at))
-    );
+    const allMonths = sessions.map((s) => getMonthName(new Date(s.started_at)));
     const uniqueMonths = Array.from(new Set(allMonths));
     setMonths(uniqueMonths);
 
@@ -255,7 +253,9 @@ export default function SessionsPage() {
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-success font-medium">This Week</p>
+                    <p className="text-sm text-success font-medium">
+                      This Week
+                    </p>
                     <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
                       {calculateWorkoutsThisWeek(sessions)}
                     </h3>

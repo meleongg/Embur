@@ -250,7 +250,6 @@ export default function EditWorkout() {
         ]);
         setWorkout(workoutData);
         setWorkoutExercises(exercisesData);
-
       } catch (err) {
         console.error(err);
         setError("Failed to fetch workout details");

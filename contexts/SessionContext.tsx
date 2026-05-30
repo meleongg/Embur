@@ -53,14 +53,14 @@ interface SessionContextProps {
 }
 
 const SessionContext = createContext<SessionContextProps | undefined>(
-  undefined,
+  undefined
 );
 
 export const SESSION_STORAGE_KEY = "FitFlash-active-session";
 
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(
-    null,
+    null
   );
   const [isEnding, setIsEnding] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -98,7 +98,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         const savedSession = localStorage.getItem(SESSION_STORAGE_KEY);
         if (savedSession) {
           console.log(
-            "⚠️ Loaded session from localStorage (IndexedDB was empty)",
+            "⚠️ Loaded session from localStorage (IndexedDB was empty)"
           );
           const parsedSession = JSON.parse(savedSession);
           if (
@@ -153,7 +153,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
           if (parsedSession && parsedSession.startTime) {
             // Ensure we have a valid date when loading from other tabs
             parsedSession.startTime = validateStartTime(
-              parsedSession.startTime,
+              parsedSession.startTime
             );
             setActiveSession(parsedSession);
           } else {

@@ -6,12 +6,7 @@ export const queryKeys = {
   },
   workouts: {
     all: ["workouts"] as const,
-    list: (
-      page: number,
-      search: string,
-      categoryId: string,
-      sort: string
-    ) =>
+    list: (page: number, search: string, categoryId: string, sort: string) =>
       [
         ...queryKeys.workouts.all,
         "list",
