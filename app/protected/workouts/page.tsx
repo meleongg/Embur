@@ -33,53 +33,25 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { queryKeys } from "@/lib/query-keys";
+import {
+  fetchWorkoutCategories,
+  fetchWorkoutsList,
+} from "@/lib/queries/workouts";
+import { toast } from "@/lib/toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
-// Enhanced workout data fetching with pagination
-const getWorkoutData = async (supabase: any, page = 1, pageSize = 6) => {
-  // Calculate range for pagination
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize - 1;
-
-  const countResponse = await supabase
-    .from("workouts")
-    .select("id", { count: "exact" });
-
-  const totalCount = countResponse.count || 0;
-
-  const { data, error } = await supabase
-    .from("workouts")
-    .select(
-      `
-      *,
-      workout_exercises(count)
-    `
-    )
-    .order("created_at", { ascending: false })
-    .range(start, end);
-
-  if (error) throw error;
-
-  return {
-    workouts: data,
-    totalCount,
-    totalPages: Math.ceil(totalCount / pageSize),
-  };
-};
-
-// Update the Actions component to stop event propagation more effectively
 const Actions = ({
   id,
   workoutName,
-  setWorkouts,
 }: {
   id: string;
   workoutName: string;
-  setWorkouts: React.Dispatch<React.SetStateAction<any[] | null>>;
 }) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const supabase = createClient();
   const { activeSession } = useSession();
   const [showWarning, setShowWarning] = useState(false);
@@ -93,12 +65,9 @@ const Actions = ({
 
       await supabase.from("workouts").delete().eq("id", workoutId);
 
-      // Get updated data after deletion
-      const { workouts: updatedWorkouts, totalPages: newTotalPages } =
-        await getWorkoutData(supabase, 1); // Reset to page 1 after deletion
-
-      // Only set the workouts array, not the entire object
-      setWorkouts(updatedWorkouts);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.workouts.all,
+      });
 
       // Success toast
       toast.dismiss(toastId);
@@ -155,7 +124,6 @@ const Actions = ({
               if (activeSession?.workoutId) {
                 setShowWarning(true);
               } else {
-                toast.info(`Starting ${workoutName} session`);
                 router.push(`/protected/workouts/${id}/session`);
               }
             }}
@@ -247,145 +215,53 @@ const Actions = ({
 };
 
 export default function WorkoutsPage() {
-  // State management
-  const [workouts, setWorkouts] = useState<any[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [pageSize] = useState(6); // Number of workouts per page
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const supabase = createClient();
-
-  // Add these new states
+  const [pageSize] = useState(6);
   const [sortOption, setSortOption] = useState("newest");
   const [filterOption, setFilterOption] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // First, add a TypeScript interface for your category at the top of your file
-  interface WorkoutCategory {
-    id: number | string;
-    name: string;
-  }
+  const { data: categories = [] } = useQuery({
+    queryKey: queryKeys.workouts.categories(),
+    queryFn: fetchWorkoutCategories,
+  });
 
-  // Add this state at the top of your component
-  const [categories, setCategories] = useState<WorkoutCategory[]>([]);
+  const {
+    data: workoutsData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: queryKeys.workouts.list(
+      currentPage,
+      searchQuery,
+      filterOption,
+      sortOption
+    ),
+    queryFn: () =>
+      fetchWorkoutsList({
+        page: currentPage,
+        pageSize,
+        sortOption,
+        filterOption,
+        searchQuery,
+      }),
+  });
 
-  // Add this function to fetch categories
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id, name")
-        .order("name");
+  const workouts = workoutsData?.workouts ?? null;
+  const totalPages = workoutsData?.totalPages ?? 1;
 
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (error) {
-      console.error("Error loading categories:", error);
-    }
-  };
-
-  // Load workouts with pagination
-  const loadWorkouts = async (page = currentPage) => {
-    try {
-      if (!isInitialLoad) setIsLoading(true);
-
-      // Start building the main query
-      let query = supabase.from("workouts").select(`
-          *,
-          category:categories(*),
-          workout_exercises(exercise_id, exercises(name, category_id, categories(name)))
-        `);
-
-      // Build the count query FIRST (before using it)
-      let countQuery = supabase
-        .from("workouts")
-        .select("id", { count: "exact" });
-
-      // Apply filters to BOTH queries
-      if (filterOption !== "all") {
-        query = query.eq("category_id", filterOption);
-        countQuery = countQuery.eq("category_id", filterOption);
-      }
-
-      // Apply search to BOTH queries
-      if (searchQuery) {
-        query = query.ilike("name", `%${searchQuery}%`);
-        countQuery = countQuery.ilike("name", `%${searchQuery}%`);
-      }
-
-      // Execute count query
-      const { count, error: countError } = await countQuery;
-
-      if (countError) throw countError;
-      const totalCount = count || 0;
-
-      // Apply sorting to main query
-      switch (sortOption) {
-        case "newest":
-          query = query.order("created_at", { ascending: false });
-          break;
-        case "oldest":
-          query = query.order("created_at", { ascending: true });
-          break;
-        case "name_asc":
-          query = query.order("name", { ascending: true });
-          break;
-        case "name_desc":
-          query = query.order("name", { ascending: false });
-          break;
-        case "most_used":
-          query = query.order("last_used_at", {
-            ascending: false,
-            nullsFirst: false,
-          });
-          break;
-      }
-
-      // Apply pagination
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize - 1;
-
-      const { data, error } = await query.range(start, end);
-
-      if (error) throw error;
-
-      setWorkouts(data);
-      setTotalPages(Math.ceil(totalCount / pageSize));
-
-      // Short timeout to ensure smooth transitions
-      setTimeout(() => {
-        setIsLoading(false);
-        setIsInitialLoad(false);
-      }, 100);
-    } catch (error) {
-      console.error("Error fetching workouts:", error);
-      toast.error("Failed to load workouts");
-      setIsLoading(false);
-      setIsInitialLoad(false);
-    }
-  };
-
-  // Add this effect to reload when sort/filter changes
   useEffect(() => {
-    if (!isInitialLoad) {
-      setCurrentPage(1); // Reset to first page when filters change
-      loadWorkouts(1);
+    if (isError) {
+      toast.error("Failed to load workouts");
     }
+  }, [isError]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [sortOption, filterOption, searchQuery]);
 
-  // Initial load
-  useEffect(() => {
-    fetchCategories();
-    loadWorkouts(1);
-  }, []);
-
-  // Handle page changes
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    loadWorkouts(page);
-
-    // Scroll to top of workout section smoothly
     document.getElementById("workouts-container")?.scrollIntoView({
       behavior: "smooth",
       block: "start",
@@ -568,7 +444,6 @@ export default function WorkoutsPage() {
                       <Actions
                         id={workout.id}
                         workoutName={workout.name}
-                        setWorkouts={setWorkouts}
                       />
                     </div>
                   </div>

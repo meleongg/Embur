@@ -1,9 +1,10 @@
+import { AppToaster } from "@/components/app-toaster";
+import { QueryProvider } from "@/components/query-provider";
 import { ConditionalThemeProvider } from "@/components/conditional-theme-provider";
 import { SessionProvider } from "@/contexts/SessionContext";
 import { NextUIProvider } from "@nextui-org/react";
 import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Metadata, Viewport } from "next";
-import { Toaster } from "sonner";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -111,12 +112,14 @@ export default function RootLayout({
         className={`${plusJakarta.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <ConditionalThemeProvider>
-          <NextUIProvider>
-            <SessionProvider>
-              <main className="min-h-screen flex flex-col">{children}</main>
-            </SessionProvider>
-            <Toaster position="top-center" richColors />
-          </NextUIProvider>
+          <QueryProvider>
+            <NextUIProvider>
+              <SessionProvider>
+                <main className="min-h-screen flex flex-col">{children}</main>
+              </SessionProvider>
+              <AppToaster />
+            </NextUIProvider>
+          </QueryProvider>
         </ConditionalThemeProvider>
       </body>
     </html>

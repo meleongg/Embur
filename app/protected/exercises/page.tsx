@@ -37,8 +37,11 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react";
+import { queryKeys } from "@/lib/query-keys";
+import { fetchExerciseLibrary } from "@/lib/queries/exercises";
+import { toast } from "@/lib/toast";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 type DropdownItemType = {
   key: string;
@@ -49,9 +52,19 @@ type DropdownItemType = {
 
 export default function ExerciseLibraryPage() {
   const supabase = createClient();
-  const [exercises, setExercises] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const {
+    data: libraryData,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: queryKeys.exercises.list(),
+    queryFn: fetchExerciseLibrary,
+  });
+
+  const exercises = libraryData?.exercises ?? [];
+  const categories = libraryData?.categories ?? [];
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -75,60 +88,11 @@ export default function ExerciseLibraryPage() {
   const [exerciseToDelete, setExerciseToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch exercises and categories
   useEffect(() => {
-    const fetchData = async () => {
-      toast.promise(
-        (async () => {
-          setIsLoading(true);
-          try {
-            // Get user info
-            const {
-              data: { user },
-            } = await supabase.auth.getUser();
-
-            if (!user) {
-              throw new Error("Not authenticated");
-            }
-
-            // Get categories
-            const { data: categoriesData, error: categoriesError } =
-              await supabase.from("categories").select("*").order("name");
-
-            if (categoriesError) throw categoriesError;
-
-            // Get exercises (both default and user's custom ones)
-            const { data: exercisesData, error: exercisesError } =
-              await supabase
-                .from("exercises")
-                .select("*, category:categories(*)")
-                .or(`is_default.eq.true,user_id.eq.${user.id}`)
-                .order("name");
-
-            if (exercisesError) throw exercisesError;
-
-            // Set data with a slight delay to show loading states
-            setCategories(categoriesData || []);
-            setExercises(exercisesData || []);
-
-            return exercisesData?.length || 0;
-          } catch (error) {
-            console.error("Error fetching data:", error);
-            throw error;
-          } finally {
-            setIsLoading(false);
-          }
-        })(),
-        {
-          loading: "Loading your exercise library...",
-          success: (count) => `Loaded ${count} exercises`,
-          error: "Failed to load exercises",
-        }
-      );
-    };
-
-    fetchData();
-  }, []);
+    if (isError) {
+      toast.error("Failed to load exercises");
+    }
+  }, [isError]);
 
   const handleEditExercise = (exercise: any) => {
     setEditExercise({
@@ -206,16 +170,9 @@ export default function ExerciseLibraryPage() {
         toast.success("Exercise added successfully");
       }
 
-      // Refresh exercises
-      const { data, error } = await supabase
-        .from("exercises")
-        .select("*, category:categories(*)")
-        .or(`is_default.eq.true,user_id.eq.${user.id}`)
-        .order("name");
-
-      if (error) throw error;
-
-      setExercises(data || []);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.exercises.list(),
+      });
       onClose();
     } catch (error) {
       console.error("Error saving exercise:", error);
@@ -261,10 +218,9 @@ export default function ExerciseLibraryPage() {
         throw error;
       }
 
-      // Remove from local state
-      setExercises((prev) =>
-        prev.filter((ex) => ex.id !== exerciseToDelete.id)
-      );
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.exercises.list(),
+      });
 
       toast.success(`${exerciseToDelete.name} deleted`);
       onDeleteClose();

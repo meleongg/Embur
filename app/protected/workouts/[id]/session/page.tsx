@@ -53,7 +53,7 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast, toastDebug } from "@/lib/toast";
 
 // Fetch workout data
 const getWorkoutData = async (supabase: any, workoutId: string) => {
@@ -985,7 +985,7 @@ export default function WorkoutSession() {
       if (updateCount > 0) {
         toast.success(`Updated workout with ${updateCount} change(s)`);
       } else {
-        toast.info("No workout changes applied");
+        toastDebug("No workout changes applied");
       }
 
       // Instead of trying to access session.id directly, call finalizeSession
@@ -1073,7 +1073,7 @@ export default function WorkoutSession() {
     setSessionExercises(newExercises);
 
     if (!currentSet.completed) {
-      toast.success(`Set ${currentSet.setNumber} completed!`);
+      toastDebug(`Set ${currentSet.setNumber} completed!`);
     }
   };
 
@@ -1415,7 +1415,7 @@ export default function WorkoutSession() {
                             return newExercises;
                           });
                           if (exerciseIndex > 0) {
-                            toast.success(`${exercise.name} moved up`);
+                            toastDebug(`${exercise.name} moved up`);
                           }
                         }}
                       >
@@ -1444,7 +1444,7 @@ export default function WorkoutSession() {
                             return newExercises;
                           });
                           if (exerciseIndex < sessionExercises.length - 1) {
-                            toast.success(`${exercise.name} moved down`);
+                            toastDebug(`${exercise.name} moved down`);
                           }
                         }}
                       >
@@ -1753,7 +1753,7 @@ export default function WorkoutSession() {
                                   setSessionExercises(newExercises);
 
                                   // Show confirmation toast
-                                  toast.success(
+                                  toastDebug(
                                     `Set removed from ${exercise.name}`,
                                   );
 
@@ -1800,7 +1800,7 @@ export default function WorkoutSession() {
                           completed: false,
                         });
                         setSessionExercises(newExercises);
-                        toast.info(
+                        toastDebug(
                           `Set ${newSetNumber} added to ${exercise.name}`,
                         );
                         setAddingSet(null);
@@ -2290,7 +2290,7 @@ export default function WorkoutSession() {
                     setShowUpdateWorkoutModal(false);
                     setCompletingWorkout(false);
                     setIsSubmitting(false);
-                    toast.info("Returned to workout session");
+                    toastDebug("Returned to workout session");
                   }}
                 >
                   ← Go Back
@@ -2444,7 +2444,7 @@ export default function WorkoutSession() {
                                   ...prev,
                                   newExercise,
                                 ]);
-                                toast.success(
+                                toastDebug(
                                   `${exercise.name} added to workout`,
                                 );
                                 setAddingExercise(null);
@@ -2853,11 +2853,9 @@ export default function WorkoutSession() {
                     // End the session
                     endSession();
                     console.log("endSession called from Cancel Workout");
-                    toast.info("Workout session canceled");
+                    toastDebug("Workout session canceled");
 
-                    // Navigate back to workouts page with a full page reload
                     setTimeout(() => {
-                      toast.info("Workout session canceled");
                       window.location.href = `/protected/workouts?ts=${Date.now()}`;
                     }, 300);
                   }}

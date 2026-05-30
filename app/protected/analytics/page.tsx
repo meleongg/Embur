@@ -2,7 +2,6 @@
 
 import PageTitle from "@/components/ui/page-title";
 import { useUnitPreference } from "@/hooks/useUnitPreference";
-import { createClient } from "@/utils/supabase/client";
 import { displayWeight, displayVolume, kgToLbs, roundTo } from "@/utils/units";
 import {
   Button,
@@ -32,7 +31,15 @@ import {
   Trophy,
   Weight,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { queryKeys } from "@/lib/query-keys";
+import {
+  fetchAnalyticsSummary,
+  fetchExerciseProgress,
+  fetchVolumeLeaderboard,
+} from "@/lib/queries/analytics";
+import { toast } from "@/lib/toast";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -46,368 +53,247 @@ import {
 } from "recharts";
 import { useTheme } from "@/components/theme-provider";
 import { getChartColors } from "@/lib/chart-colors";
-import { toast } from "sonner";
+
+const EMPTY_LIST: never[] = [];
+
+function buildExerciseChartData(
+  exerciseId: string,
+  sessionsData: any[],
+  timeframe: string,
+  useMetric: boolean
+) {
+  const exerciseSessions = sessionsData.filter(
+    (s) => s.exercise_id === exerciseId
+  );
+
+  const groupedByDate: { [key: string]: any[] } = {};
+  exerciseSessions.forEach((session) => {
+    const date = new Date(session.session?.started_at)
+      .toISOString()
+      .split("T")[0];
+    if (!groupedByDate[date]) {
+      groupedByDate[date] = [];
+    }
+    groupedByDate[date].push(session);
+  });
+
+  let filteredDates = Object.keys(groupedByDate);
+  if (timeframe !== "all") {
+    const now = new Date();
+    const cutoff = new Date();
+
+    if (timeframe === "week") {
+      cutoff.setDate(now.getDate() - 7);
+    } else if (timeframe === "month") {
+      cutoff.setMonth(now.getMonth() - 1);
+    } else if (timeframe === "3months") {
+      cutoff.setMonth(now.getMonth() - 3);
+    } else if (timeframe === "year") {
+      cutoff.setFullYear(now.getFullYear() - 1);
+    }
+
+    filteredDates = filteredDates.filter((date) => new Date(date) >= cutoff);
+  }
+
+  return filteredDates
+    .map((date) => {
+      const sessions = groupedByDate[date];
+      const maxWeightKg = Math.max(...sessions.map((s: any) => s.weight));
+      const totalVolumeKg = sessions.reduce(
+        (sum: number, s: any) => sum + s.reps * s.weight,
+        0
+      );
+      const maxWeight = useMetric ? maxWeightKg : kgToLbs(maxWeightKg);
+      const totalVolume = useMetric ? totalVolumeKg : kgToLbs(totalVolumeKg);
+
+      return {
+        date,
+        maxWeight,
+        totalVolume,
+        formattedDate: new Date(date).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
+      };
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+}
+
+function buildVolumeChartData(sessionsData: any[]) {
+  const volumeByExercise = sessionsData.reduce(
+    (acc: { [key: string]: number }, session) => {
+      const exerciseName = Array.isArray(session.exercise)
+        ? session.exercise[0]?.name
+        : session.exercise?.name;
+      const volume = session.reps * session.weight;
+
+      if (!exerciseName) return acc;
+
+      if (!acc[exerciseName]) {
+        acc[exerciseName] = 0;
+      }
+      acc[exerciseName] += volume;
+      return acc;
+    },
+    {}
+  );
+
+  return Object.entries(volumeByExercise)
+    .map(([name, volume]) => ({
+      name,
+      volume,
+    }))
+    .sort((a, b) => b.volume - a.volume)
+    .slice(0, 10);
+}
+
+function getExerciseCategoryName(exercise: {
+  category?: { name?: string } | { name?: string }[] | null;
+}) {
+  if (Array.isArray(exercise.category)) {
+    return exercise.category[0]?.name ?? "";
+  }
+  return exercise.category?.name ?? "";
+}
 
 export default function AnalyticsPage() {
-  const supabase = createClient();
   const { theme } = useTheme();
   const chartColors = getChartColors(theme);
   const { useMetric } = useUnitPreference();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isChartLoading, setIsChartLoading] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState("all");
   const [activeTab, setActiveTab] = useState("progress");
-  const [exercises, setExercises] = useState<any[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [exerciseData, setExerciseData] = useState<any[]>([]);
-  const [personalRecords, setPersonalRecords] = useState<any[]>([]);
-  const [volumeData, setVolumeData] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState("");
   const [isExerciseDropdownOpen, setIsExerciseDropdownOpen] = useState(false);
 
-  // Add this filtered exercises data computed from search term
-  const filteredExercises = exercises.filter(
-    (exercise) =>
-      exerciseSearchTerm === "" ||
-      exercise.name.toLowerCase().includes(exerciseSearchTerm.toLowerCase()) ||
-      (exercise.category?.name || "")
-        .toLowerCase()
-        .includes(exerciseSearchTerm.toLowerCase())
-  );
+  const {
+    data: summary,
+    isLoading,
+    isError: summaryError,
+  } = useQuery({
+    queryKey: queryKeys.analytics.summary(),
+    queryFn: fetchAnalyticsSummary,
+  });
 
-  // Add this helper function near the top of your component
+  const exercises = summary?.exercises ?? EMPTY_LIST;
+  const personalRecords = summary?.personalRecords ?? EMPTY_LIST;
+  const normalizedExerciseSearch = exerciseSearchTerm.trim().toLowerCase();
+
+  const filteredExercises = useMemo(() => {
+    if (!normalizedExerciseSearch) {
+      return EMPTY_LIST;
+    }
+
+    return exercises.filter((exercise: any) => {
+      const categoryName = getExerciseCategoryName(exercise);
+      return (
+        exercise.name.toLowerCase().includes(normalizedExerciseSearch) ||
+        categoryName.toLowerCase().includes(normalizedExerciseSearch)
+      );
+    });
+  }, [exercises, normalizedExerciseSearch]);
+
   const getSelectedExerciseName = () => {
     if (!selectedExercise) return "";
     const exercise = exercises.find((ex) => ex.id === selectedExercise);
     return exercise ? exercise.name : "";
   };
 
-  // Fetch user's exercises and session data
+  const progressEnabled =
+    Boolean(selectedExercise) && activeTab === "progress";
+
+  const {
+    data: progressRows,
+    isFetching: isChartLoading,
+    isError: progressError,
+  } = useQuery({
+    queryKey: queryKeys.analytics.exerciseProgress(
+      selectedExercise ?? "",
+      selectedTimeframe
+    ),
+    queryFn: () =>
+      fetchExerciseProgress(selectedExercise!, selectedTimeframe),
+    enabled: progressEnabled,
+  });
+
+  const { data: volumeRows } = useQuery({
+    queryKey: queryKeys.analytics.volumeLeaderboard(),
+    queryFn: () => fetchVolumeLeaderboard(),
+    enabled: activeTab === "volume",
+  });
+
   useEffect(() => {
-    const fetchData = async () => {
-      const loadingToast = toast.loading("Loading your fitness analytics...");
-
-      try {
-        setIsLoading(true);
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-          toast.error("Authentication required");
-          throw new Error("Not authenticated");
-        }
-
-        // Get all exercises for the dropdown
-        const { data: exercisesData } = await supabase
-          .from("exercises")
-          .select("id, name, category:categories(name)")
-          .or(`is_default.eq.true,user_id.eq.${user.id}`);
-
-        const { data: analyticsData, error: analyticsError } = await supabase
-          .from("analytics")
-          .select(
-            `
-          exercise_id,
-          max_weight,
-          max_reps,
-          max_volume,
-          updated_at,
-          exercises(name)
-        `
-          )
-          .eq("user_id", user.id);
-
-        if (analyticsError) {
-          throw new Error(
-            `Error fetching analytics: ${analyticsError.message}`
-          );
-        }
-
-        // Transform analytics data to personal records format
-        const records =
-          analyticsData?.map((record) => ({
-            id: record.exercise_id,
-            name: (record.exercises as any)?.name,
-            max_weight: record.max_weight || 0,
-            max_reps: record.max_reps || 0,
-            max_volume: record.max_volume || 0,
-            date: record.updated_at,
-          })) || [];
-
-        setExercises(exercisesData || []);
-        setPersonalRecords(records);
-
-        // Still need session data for charts
-        const { data: sessionsData } = await supabase
-          .from("session_exercises")
-          .select(
-            `
-          id, reps, weight, exercise_id,
-          exercise:exercises(name),
-          session:sessions(started_at)
-        `
-          )
-          .eq("user_id", user.id)
-          .order("session(started_at)", { ascending: false });
-
-        setSessions(sessionsData || []);
-        calculateVolumeData(sessionsData || []);
-
-        // Show success toast with key stats
-        toast.success(
-          `Loaded ${exercisesData?.length || 0} exercises and ${records.length || 0} personal records`,
-          {
-            id: loadingToast,
-          }
-        );
-      } catch (error: any) {
-        console.error("Error fetching analytics data:", error);
-        toast.error(error.message || "Failed to load analytics data", {
-          id: loadingToast,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Add this useEffect to process data whenever selectedExercise changes, tab switches to "progress", or unit preference changes
-  useEffect(() => {
-    if (selectedExercise && activeTab === "progress" && sessions.length > 0) {
-      setIsChartLoading(true);
-
-      try {
-        processExerciseData(selectedExercise, sessions, selectedTimeframe);
-        // Add a small delay to show the loading state
-        setTimeout(() => {
-          setIsChartLoading(false);
-        }, 300);
-      } catch (error: any) {
-        toast.error(`Error processing data: ${error.message}`);
-        setIsChartLoading(false);
-      }
+    if (summaryError) {
+      toast.error("Failed to load analytics data");
     }
-  }, [selectedExercise, activeTab, useMetric, sessions, selectedTimeframe]);
+  }, [summaryError]);
 
-  // Add this useEffect after your other useEffects
   useEffect(() => {
-    // When selectedExercise changes but not from a search action
-    if (selectedExercise && !exerciseSearchTerm) {
-      const exerciseName = exercises.find(
-        (ex) => ex.id === selectedExercise
-      )?.name;
-      if (exerciseName) {
-        setExerciseSearchTerm(exerciseName);
-      }
+    if (progressError) {
+      toast.error("Failed to load exercise progress");
     }
-  }, [selectedExercise, exercises]);
+  }, [progressError]);
 
-  // Handle exercise selection with loading state
+  const exerciseData = useMemo(() => {
+    if (
+      !selectedExercise ||
+      activeTab !== "progress" ||
+      !progressRows?.length
+    ) {
+      return EMPTY_LIST;
+    }
+
+    return buildExerciseChartData(
+      selectedExercise,
+      progressRows,
+      selectedTimeframe,
+      useMetric
+    );
+  }, [
+    selectedExercise,
+    activeTab,
+    progressRows,
+    selectedTimeframe,
+    useMetric,
+  ]);
+
+  const volumeData = useMemo(() => {
+    if (activeTab !== "volume" || !volumeRows?.length) {
+      return EMPTY_LIST;
+    }
+
+    return buildVolumeChartData(volumeRows);
+  }, [activeTab, volumeRows]);
+
+  const handleExerciseSearchChange = (value: string) => {
+    setExerciseSearchTerm(value);
+    setIsExerciseDropdownOpen(true);
+
+    if (!selectedExercise) return;
+
+    const selectedName =
+      exercises.find((ex) => ex.id === selectedExercise)?.name ?? "";
+    if (value.trim().toLowerCase() !== selectedName.toLowerCase()) {
+      setSelectedExercise(null);
+    }
+  };
+
   const handleExerciseChange = (value: string) => {
-    setIsChartLoading(true);
     setSelectedExercise(value);
-
-    if (sessions.length > 0) {
-      try {
-        processExerciseData(value, sessions, selectedTimeframe);
-        // Add a small delay to show the loading state
-        setTimeout(() => {
-          setIsChartLoading(false);
-        }, 300);
-      } catch (error: any) {
-        toast.error(`Error processing data: ${error.message}`);
-        setIsChartLoading(false);
-      }
-    } else {
-      setIsChartLoading(false);
-    }
   };
 
-  // Handle timeframe selection with loading state
   const handleTimeframeChange = (value: string) => {
-    setIsChartLoading(true);
     setSelectedTimeframe(value);
-
-    // Get the readable timeframe name for the toast
-    const timeframeLabels: Record<string, string> = {
-      week: "Last 7 Days",
-      month: "Last 30 Days",
-      "3months": "Last 3 Months",
-      year: "Last Year",
-      all: "All Time",
-    };
-
-    if (selectedExercise && sessions.length > 0) {
-      try {
-        processExerciseData(selectedExercise, sessions, value);
-        // Add a small delay to show the loading state
-        setTimeout(() => {
-          setIsChartLoading(false);
-          // Only show toast if data exists
-          if (exerciseData.length > 0) {
-            toast(`Showing data for ${timeframeLabels[value] || value}`, {
-              icon: <TrendingUp className="h-4 w-4" />,
-            });
-          }
-        }, 300);
-      } catch (error) {
-        console.error("Error processing exercise data:", error);
-        setIsChartLoading(false);
-      }
-    } else {
-      setIsChartLoading(false);
-    }
   };
 
-  // Handle tab changes
   const handleTabChange = (key: React.Key) => {
     setActiveTab(key as string);
-
-    // Show a toast only when changing to the records tab
-    if (key === "records" && personalRecords.length > 0) {
-      toast(`Viewing ${personalRecords.length} personal records`, {
-        icon: <Weight className="h-4 w-4" />,
-      });
-    }
-
-    // Ensure volume data is calculated when switching to that tab
-    if (key === "volume" && sessions.length > 0) {
-      calculateVolumeData(sessions);
-    }
-  };
-
-  // Process data for an individual exercise
-  const processExerciseData = (
-    exerciseId: string,
-    sessionsData: any[],
-    timeframe: string
-  ) => {
-    // Filter for the selected exercise
-    const exerciseSessions = sessionsData.filter(
-      (s) => s.exercise_id === exerciseId
-    );
-
-    // Group by date
-    const groupedByDate: { [key: string]: any[] } = {};
-    exerciseSessions.forEach((session) => {
-      const date = new Date(session.session?.started_at)
-        .toISOString()
-        .split("T")[0];
-      if (!groupedByDate[date]) {
-        groupedByDate[date] = [];
-      }
-      groupedByDate[date].push(session);
-    });
-
-    // Apply timeframe filter
-    let filteredDates = Object.keys(groupedByDate);
-    if (timeframe !== "all") {
-      const now = new Date();
-      const cutoff = new Date();
-
-      if (timeframe === "week") {
-        cutoff.setDate(now.getDate() - 7);
-      } else if (timeframe === "month") {
-        cutoff.setMonth(now.getMonth() - 1);
-      } else if (timeframe === "3months") {
-        cutoff.setMonth(now.getMonth() - 3);
-      } else if (timeframe === "year") {
-        cutoff.setFullYear(now.getFullYear() - 1);
-      }
-
-      filteredDates = filteredDates.filter((date) => new Date(date) >= cutoff);
-    }
-
-    // Create chart data
-    const chartData = filteredDates
-      .map((date) => {
-        const sessions = groupedByDate[date];
-        const maxWeightKg = Math.max(...sessions.map((s: any) => s.weight));
-        const totalVolumeKg = sessions.reduce(
-          (sum: number, s: any) => sum + s.reps * s.weight,
-          0
-        );
-        const maxWeight = useMetric ? maxWeightKg : kgToLbs(maxWeightKg);
-        const totalVolume = useMetric ? totalVolumeKg : kgToLbs(totalVolumeKg);
-
-        return {
-          date,
-          maxWeight,
-          totalVolume,
-          formattedDate: new Date(date).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-          }),
-        };
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()); // Sort by date ascending
-
-    setExerciseData(chartData);
-
-    // Calculate volume trends by exercise
-    const volumeByExercise = sessionsData.reduce(
-      (acc: { [key: string]: number }, session) => {
-        const exerciseName = session.exercise?.name;
-        const volume = session.reps * session.weight;
-
-        if (!acc[exerciseName]) {
-          acc[exerciseName] = 0;
-        }
-        acc[exerciseName] += volume;
-        return acc;
-      },
-      {}
-    );
-
-    const volumeChartData = Object.entries(volumeByExercise)
-      .map(([name, volume]) => ({
-        name,
-        volume,
-      }))
-      .sort((a, b) => b.volume - a.volume)
-      .slice(0, 10); // Top 10 by volume
-
-    setVolumeData(volumeChartData);
-  };
-
-  // Add this function to calculate volume data independently
-  const calculateVolumeData = (sessionsData: any[]) => {
-    // Calculate volume trends by exercise
-    const volumeByExercise = sessionsData.reduce(
-      (acc: { [key: string]: number }, session) => {
-        const exerciseName = session.exercise?.name;
-        const volume = session.reps * session.weight;
-
-        if (!exerciseName) return acc;
-
-        if (!acc[exerciseName]) {
-          acc[exerciseName] = 0;
-        }
-        acc[exerciseName] += volume;
-        return acc;
-      },
-      {}
-    );
-
-    const volumeChartData = Object.entries(volumeByExercise)
-      .map(([name, volume]) => ({
-        name,
-        volume,
-      }))
-      .sort((a, b) => b.volume - a.volume)
-      .slice(0, 10); // Top 10 by volume
-
-    setVolumeData(volumeChartData);
   };
 
   // Filter personal records based on search
   const filteredRecords = personalRecords.filter((record) => {
-    const exerciseName = record.name;
+    const exerciseName = record.name ?? "";
     return exerciseName.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
@@ -517,7 +403,9 @@ export default function AnalyticsPage() {
                       type="text"
                       placeholder="Search and select an exercise..."
                       value={exerciseSearchTerm}
-                      onChange={(e) => setExerciseSearchTerm(e.target.value)}
+                      onChange={(e) =>
+                        handleExerciseSearchChange(e.target.value)
+                      }
                       startContent={
                         <Search size={16} className="text-default-400" />
                       }
@@ -525,28 +413,45 @@ export default function AnalyticsPage() {
                       onClear={() => {
                         setExerciseSearchTerm("");
                         setSelectedExercise(null);
+                        setIsExerciseDropdownOpen(true);
                       }}
                       aria-labelledby="exercise-search-label"
+                      aria-expanded={isExerciseDropdownOpen}
+                      aria-haspopup="listbox"
+                      aria-autocomplete="list"
                       classNames={{
                         inputWrapper: "h-12",
                       }}
                       onFocus={() => setIsExerciseDropdownOpen(true)}
                       onBlur={() => {
-                        // Use a delay to allow for item clicks
                         setTimeout(() => setIsExerciseDropdownOpen(false), 200);
                       }}
                     />
 
-                    {/* Add the dropdown content here */}
-                    {isExerciseDropdownOpen && filteredExercises.length > 0 && (
-                      <div className="absolute z-50 mt-1 w-full bg-background border border-default-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {isExerciseDropdownOpen && !normalizedExerciseSearch && (
+                      <div className="absolute z-50 mt-1 w-full bg-background border border-default-200 rounded-lg shadow-lg p-4 text-center">
+                        <p className="text-default-500 text-sm">
+                          Type to search your exercise library
+                        </p>
+                      </div>
+                    )}
+
+                    {isExerciseDropdownOpen &&
+                      normalizedExerciseSearch &&
+                      filteredExercises.length > 0 && (
+                      <div
+                        className="absolute z-50 mt-1 w-full bg-background border border-default-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                        role="listbox"
+                        aria-label="Exercise search results"
+                      >
                         <ul className="py-1">
                           {filteredExercises.map((exercise) => (
                             <li
                               key={exercise.id}
+                              role="option"
+                              aria-selected={selectedExercise === exercise.id}
                               className="px-3 py-2 hover:bg-default-100 cursor-pointer flex items-center justify-between"
                               onMouseDown={() => {
-                                // Use mouseDown instead of click to beat the onBlur timing
                                 handleExerciseChange(exercise.id);
                                 setExerciseSearchTerm(exercise.name);
                                 setIsExerciseDropdownOpen(false);
@@ -559,9 +464,9 @@ export default function AnalyticsPage() {
                                 />
                                 <span>{exercise.name}</span>
                               </div>
-                              {exercise.category && (
+                              {getExerciseCategoryName(exercise) && (
                                 <span className="text-xs text-default-400">
-                                  {exercise.category.name}
+                                  {getExerciseCategoryName(exercise)}
                                 </span>
                               )}
                             </li>
@@ -571,10 +476,13 @@ export default function AnalyticsPage() {
                     )}
 
                     {isExerciseDropdownOpen &&
-                      exerciseSearchTerm &&
+                      normalizedExerciseSearch &&
                       filteredExercises.length === 0 && (
                         <div className="absolute z-50 mt-1 w-full bg-background border border-default-200 rounded-lg shadow-lg p-4 text-center">
-                          <p className="text-default-500">No exercises found</p>
+                          <p className="text-default-500">
+                            No exercises match &ldquo;{exerciseSearchTerm.trim()}
+                            &rdquo;
+                          </p>
                         </div>
                       )}
                   </div>
@@ -950,15 +858,7 @@ export default function AnalyticsPage() {
                             setSelectedExercise(record.id);
                             setExerciseSearchTerm(selectedExerciseName);
                             setActiveTab("progress");
-
-                            // Optional: show a toast to confirm the action
-                            toast.info(
-                              `Viewing progress for ${selectedExerciseName}`,
-                              {
-                                duration: 2000,
-                                icon: <TrendingUp size={16} />,
-                              }
-                            );
+                            setIsExerciseDropdownOpen(false);
                           }}
                           aria-label={`View progress for ${record.name}`}
                           endContent={<ChevronRight size={14} />}

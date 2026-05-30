@@ -6,7 +6,6 @@ import BackButton from "@/components/ui/back-button";
 import PageTitle from "@/components/ui/page-title";
 import { useSession } from "@/contexts/SessionContext";
 import { useUnitPreference } from "@/hooks/useUnitPreference";
-import { createClient } from "@/utils/supabase/client";
 import { convertFromStorageUnit } from "@/utils/units";
 import {
   Button,
@@ -39,107 +38,41 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { queryKeys } from "@/lib/query-keys";
+import { fetchWorkoutDetail } from "@/lib/queries/workout-detail";
+import { toast } from "@/lib/toast";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
-// Adding type definition at the top of the file - add this with your other imports
 type CategoryExercises = {
   [category: string]: any[];
-};
-
-// Fetch workout data with category
-const getWorkoutData = async (supabase: any, workoutId: string) => {
-  const { data: workout, error } = await supabase
-    .from("workouts")
-    .select(
-      `
-      *,
-      category:categories(*)
-    `
-    )
-    .eq("id", workoutId)
-    .single();
-
-  if (error) throw error;
-  return workout;
-};
-
-// Fetch workout exercises with exercise details
-const getWorkoutExercises = async (supabase: any, workoutId: string) => {
-  const { data: workoutExercises, error } = await supabase
-    .from("workout_exercises")
-    .select(
-      `
-      *,
-      exercise:exercises(*, categories(*))
-    `
-    )
-    .eq("workout_id", workoutId)
-    .order("exercise_order", { ascending: true });
-
-  if (error) throw error;
-  return workoutExercises;
-};
-
-// Fetch workout history
-const getWorkoutHistory = async (supabase: any, workoutId: string) => {
-  const { data: sessions, error } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("workout_id", workoutId)
-    .order("ended_at", { ascending: false })
-    .limit(5);
-
-  if (error) throw error;
-  return sessions || [];
 };
 
 export default function ViewWorkout() {
   const router = useRouter();
   const params = useParams();
   const workoutId = params.id as string;
-  const [workout, setWorkout] = useState<any | null>(null);
-  const [workoutExercises, setWorkoutExercises] = useState<any[]>([]);
-  const [workoutHistory, setWorkoutHistory] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
   const { activeSession } = useSession();
   const { useMetric, defaultRestTimer } = useUnitPreference();
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [selectedTab, setSelectedTab] = useState("exercises");
-  const hasShownLoadToast = useRef(false);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: queryKeys.workouts.detail(workoutId),
+    queryFn: () => fetchWorkoutDetail(workoutId),
+    enabled: Boolean(workoutId),
+  });
+
+  const workout = data?.workout ?? null;
+  const workoutExercises = data?.workoutExercises ?? [];
+  const workoutHistory = data?.workoutHistory ?? [];
+  const error = isError ? "Failed to fetch workout details" : null;
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const [workoutData, exercisesData, historyData] = await Promise.all([
-          getWorkoutData(supabase, workoutId),
-          getWorkoutExercises(supabase, workoutId),
-          getWorkoutHistory(supabase, workoutId),
-        ]);
-
-        setWorkout(workoutData);
-        setWorkoutExercises(exercisesData);
-        setWorkoutHistory(historyData);
-
-        // Only show toast if we haven't shown it yet
-        if (!hasShownLoadToast.current) {
-          toast.success("Workout details loaded");
-          hasShownLoadToast.current = true;
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch workout details");
-        toast.error("Failed to load workout details");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [workoutId]);
+    if (isError) {
+      toast.error("Failed to load workout details");
+    }
+  }, [isError]);
 
   // Calculate more accurate workout duration based on exercises and sets
   const calculateWorkoutDuration = (exercises: any[]): number => {

@@ -34,7 +34,9 @@ import {
 import { ArrowDown, ArrowUp, Dumbbell, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { queryKeys } from "@/lib/query-keys";
+import { toast, toastDebug } from "@/lib/toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Import the utility functions at the top of your file
 import { convertToStorageUnit } from "@/utils/units";
@@ -63,6 +65,7 @@ interface DbExercise {
 
 const CreateWorkoutPage = () => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { useMetric, isLoading } = useUnitPreference();
   const [workoutExercises, setWorkoutExercises] = useState<Exercise[]>([]);
   const [exercises, setExercises] = useState<DbExercise[]>([]);
@@ -362,6 +365,10 @@ const CreateWorkoutPage = () => {
       toast.dismiss(toastId);
       toast.success(`${insertedExercise.name} added to your exercise library!`);
 
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.exercises.list(),
+      });
+
       // Add exercise to table and close modal
       handleAddExercise({
         id: insertedExercise.id,
@@ -474,6 +481,10 @@ const CreateWorkoutPage = () => {
       // Success - show success toast
       toast.dismiss(toastId);
       toast.success("Workout created successfully!");
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.workouts.all,
+      });
 
       setWorkoutExercises([]); // Clear exercises after submission
 
@@ -690,7 +701,7 @@ const CreateWorkoutPage = () => {
                                   exercise_order: i,
                                 }));
                               });
-                              toast.success("Exercise moved up");
+                              toastDebug("Exercise moved up");
                             }}
                           >
                             <ArrowUp className="h-4 w-4" />
@@ -719,7 +730,7 @@ const CreateWorkoutPage = () => {
                                   exercise_order: i,
                                 }));
                               });
-                              toast.success("Exercise moved down");
+                              toastDebug("Exercise moved down");
                             }}
                           >
                             <ArrowDown className="h-4 w-4" />

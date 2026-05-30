@@ -1,39 +1,17 @@
-import { createClient } from "@/utils/supabase/client";
-import { useEffect, useState } from "react";
+import { queryKeys } from "@/lib/query-keys";
+import { fetchUserPreferences } from "@/lib/queries/user-preferences";
+import { useQuery } from "@tanstack/react-query";
 
 export function useUnitPreference() {
-  const [useMetric, setUseMetric] = useState(true);
-  const [defaultRestTimer, setDefaultRestTimer] = useState(60); // Add this
-  const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.userPreferences.current(),
+    queryFn: fetchUserPreferences,
+  });
 
-  useEffect(() => {
-    const fetchPreferences = async () => {
-      setIsLoading(true);
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data } = await supabase
-          .from("user_preferences")
-          .select("use_metric, default_rest_timer") // Get both preferences
-          .eq("user_id", user.id)
-          .single();
-
-        if (data) {
-          setUseMetric(data.use_metric);
-          // Use the rest timer or default to 60 seconds
-          setDefaultRestTimer(data.default_rest_timer || 60);
-        }
-      }
-
-      setIsLoading(false);
-    };
-
-    fetchPreferences();
-  }, []);
-
-  return { useMetric, defaultRestTimer, isLoading }; // Return the new value
+  return {
+    useMetric: data?.use_metric ?? true,
+    defaultRestTimer: data?.default_rest_timer ?? 60,
+    useDarkMode: data?.use_dark_mode ?? false,
+    isLoading,
+  };
 }

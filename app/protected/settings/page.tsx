@@ -35,7 +35,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "@/lib/toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Default user preferences
 const DEFAULT_PREFERENCES = {
@@ -46,6 +48,7 @@ const DEFAULT_PREFERENCES = {
 
 export default function SettingsPage() {
   const supabase = createClient();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [activeTab, setActiveTab] = useState("account");
@@ -137,6 +140,10 @@ export default function SettingsPage() {
       );
       throw error;
     }
+
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.userPreferences.current(),
+    });
   };
 
   // Update email
@@ -604,10 +611,6 @@ export default function SettingsPage() {
                           { use_metric: isSelected },
                           { errorMessage: "Units updated locally but failed to save" }
                         );
-                        toast.success(
-                          `Weight units set to ${isSelected ? "kg" : "lbs"}`,
-                          { duration: 2000, icon: <Weight size={16} /> }
-                        );
                       } catch {
                         /* toast shown in persistPreference */
                       }
@@ -643,17 +646,6 @@ export default function SettingsPage() {
                           {
                             errorMessage:
                               "Theme updated locally but failed to save to account",
-                          }
-                        );
-                        toast.success(
-                          `${isSelected ? "Dark" : "Light"} theme activated`,
-                          {
-                            duration: 2000,
-                            icon: isSelected ? (
-                              <Moon size={16} />
-                            ) : (
-                              <Sun size={16} />
-                            ),
                           }
                         );
                       } catch {
@@ -699,10 +691,6 @@ export default function SettingsPage() {
                               "Rest timer updated locally but failed to save",
                           }
                         );
-                        toast.success("Rest timer updated", {
-                          duration: 2000,
-                          icon: <Clock size={16} />,
-                        });
                       } catch {
                         /* toast shown in persistPreference */
                       }

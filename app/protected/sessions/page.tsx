@@ -2,7 +2,6 @@
 
 import PageTitle from "@/components/ui/page-title";
 import { useUnitPreference } from "@/hooks/useUnitPreference";
-import { createClient } from "@/utils/supabase/client";
 import { kgToLbs } from "@/utils/units";
 import {
   Button,
@@ -21,9 +20,12 @@ import {
   Clock,
   Dumbbell,
 } from "lucide-react";
+import { queryKeys } from "@/lib/query-keys";
+import { fetchSessionsList } from "@/lib/queries/sessions";
+import { toast } from "@/lib/toast";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 // Helper functions for stats calculations
 const calculateWorkoutsThisWeek = (sessions: any[]) => {
@@ -82,9 +84,15 @@ const getMonthName = (date: Date) => {
 };
 
 export default function SessionsPage() {
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: sessions = [],
+    isLoading,
+    isError,
+    error: queryError,
+  } = useQuery({
+    queryKey: queryKeys.sessions.list(),
+    queryFn: fetchSessionsList,
+  });
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [months, setMonths] = useState<string[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<any[]>([]);
@@ -93,82 +101,38 @@ export default function SessionsPage() {
 
   const { useMetric, isLoading: loadingPreferences } = useUnitPreference();
 
-  const supabase = createClient();
-
-  // Fetch sessions with improved toast notifications
   useEffect(() => {
-    const fetchSessions = async () => {
-      // Sonner's promise-based toast for async operations
-      toast.promise(
-        (async () => {
-          setIsLoading(true);
-          try {
-            const {
-              data: { user },
-            } = await supabase.auth.getUser();
-
-            if (!user) {
-              setError("Not authenticated");
-              throw new Error(
-                "Authentication required to view workout history"
-              );
-            }
-
-            const { data, error } = await supabase
-              .from("sessions")
-              .select(
-                `
-                *,
-                workout:workouts(*),
-                session_exercises(*)
-              `
-              )
-              .eq("user_id", user.id)
-              .order("started_at", { ascending: false });
-
-            if (error) throw error;
-
-            // Create a safe result that's guaranteed to be an array
-            const safeData = data || [];
-
-            if (safeData.length) {
-              setSessions(safeData);
-
-              // Extract unique months from sessions
-              const allMonths = safeData.map((s) =>
-                getMonthName(new Date(s.started_at))
-              );
-              const uniqueMonths = Array.from(new Set(allMonths));
-              setMonths(uniqueMonths);
-
-              // Set default selected month to most recent
-              if (uniqueMonths.length > 0) {
-                setSelectedMonth(uniqueMonths[0]);
-              }
-            } else {
-              setSessions([]);
-              setMonths([]);
-            }
-
-            return safeData; // Return safe array for success message
-          } catch (err: any) {
-            console.error("Error fetching sessions:", err);
-            setError(err.message);
-            throw err; // Re-throw for error toast
-          } finally {
-            setIsLoading(false);
-          }
-        })(),
-        {
-          loading: "Loading your workout history...",
-          success: (data) => `Loaded ${data.length} workout sessions`,
-          error: "Could not load your workout history",
-        }
+    if (isError) {
+      toast.error(
+        queryError instanceof Error
+          ? queryError.message
+          : "Could not load your workout history"
       );
-    };
+    }
+  }, [isError, queryError]);
 
-    fetchSessions();
-  }, []);
+  const error = isError
+    ? queryError instanceof Error
+      ? queryError.message
+      : "Could not load your workout history"
+    : null;
+
+  useEffect(() => {
+    if (!sessions.length) {
+      setMonths([]);
+      return;
+    }
+
+    const allMonths = sessions.map((s) =>
+      getMonthName(new Date(s.started_at))
+    );
+    const uniqueMonths = Array.from(new Set(allMonths));
+    setMonths(uniqueMonths);
+
+    if (uniqueMonths.length > 0 && !selectedMonth) {
+      setSelectedMonth(uniqueMonths[0]);
+    }
+  }, [sessions]);
 
   // Filter sessions when selectedMonth changes with toast notification
   useEffect(() => {
@@ -178,13 +142,6 @@ export default function SessionsPage() {
         return sessionMonth === selectedMonth;
       });
       setFilteredSessions(filtered);
-
-      if (filtered.length > 0) {
-        toast(`Viewing ${filtered.length} sessions from ${selectedMonth}`, {
-          description: "Filtered view",
-          icon: <Calendar className="h-4 w-4" />,
-        });
-      }
     } else {
       setFilteredSessions(sessions);
     }

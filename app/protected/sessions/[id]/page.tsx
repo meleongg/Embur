@@ -3,7 +3,6 @@
 import BackButton from "@/components/ui/back-button";
 import PageTitle from "@/components/ui/page-title";
 import { useUnitPreference } from "@/hooks/useUnitPreference";
-import { createClient } from "@/utils/supabase/client";
 import { displayWeight } from "@/utils/units";
 import {
   Card,
@@ -19,118 +18,39 @@ import {
   TableRow,
 } from "@nextui-org/react";
 import { Calendar, Clock, Dumbbell, Info, Trophy } from "lucide-react";
+import { queryKeys } from "@/lib/query-keys";
+import { fetchSessionDetail } from "@/lib/queries/sessions";
+import { toast } from "@/lib/toast";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-
-// Fetch session data
-const getSessionData = async (supabase: any, sessionId: string) => {
-  const { data: session, error } = await supabase
-    .from("sessions")
-    .select("*, workout:workouts(*)")
-    .eq("id", sessionId)
-    .single();
-
-  if (error) throw error;
-  return session;
-};
-
-// Fetch session exercises with proper category information
-const getSessionExercises = async (supabase: any, sessionId: string) => {
-  const { data: sessionExercises, error } = await supabase
-    .from("session_exercises")
-    .select(
-      `
-      *,
-      exercise:exercises(
-        *,
-        category:categories(*)
-      )
-    `
-    )
-    .eq("session_id", sessionId);
-
-  if (error) throw error;
-  return sessionExercises;
-};
+import { useEffect } from "react";
 
 export default function ViewSession() {
   const params = useParams();
   const sessionId = params.id as string;
-  const [session, setSession] = useState<any | null>(null);
-  const [sessionExercises, setSessionExercises] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
 
-  // Add unit preference hook
   const { useMetric, isLoading: isLoadingUnits } = useUnitPreference();
 
+  const { data, isLoading, isError, error: queryError } = useQuery({
+    queryKey: queryKeys.sessions.detail(sessionId),
+    queryFn: () => fetchSessionDetail(sessionId),
+    enabled: Boolean(sessionId),
+  });
+
+  const session = data ?? null;
+  const sessionExercises = data?.session_exercises ?? [];
+  const error =
+    isError && queryError instanceof Error
+      ? queryError.message
+      : isError
+        ? "Failed to fetch session details"
+        : null;
+
   useEffect(() => {
-    const fetchData = async () => {
-      // Use toast.promise for better feedback
-      toast.promise(
-        (async () => {
-          try {
-            setIsLoading(true);
-            const [sessionData, exercisesData] = await Promise.all([
-              getSessionData(supabase, sessionId),
-              getSessionExercises(supabase, sessionId),
-            ]);
-
-            if (!sessionData) throw new Error("Session not found");
-
-            setSession(sessionData);
-            setSessionExercises(exercisesData || []);
-
-            // Return data for success message
-            return {
-              workoutName: sessionData.workout.name,
-              exerciseCount: Object.keys(
-                exercisesData.reduce(
-                  (
-                    acc: Record<string, boolean>,
-                    ex: { exercise: { name: string } }
-                  ) => {
-                    acc[ex.exercise.name] = true;
-                    return acc;
-                  },
-                  {} as Record<string, boolean>
-                )
-              ).length,
-            };
-          } catch (err: any) {
-            console.error(err);
-            setError(err.message || "Failed to fetch session details");
-            throw err;
-          } finally {
-            setIsLoading(false);
-          }
-        })(),
-        {
-          loading: "Loading workout session details...",
-          success: (data) =>
-            `Loaded "${data.workoutName}" with ${data.exerciseCount} exercises`,
-          error: (err) => `Error: ${err.message || "Failed to load session"}`,
-        }
-      );
-    };
-
-    fetchData();
-  }, [sessionId]);
-
-  // Notify when unit preference changes
-  useEffect(() => {
-    if (!isLoadingUnits && sessionExercises.length > 0) {
-      toast.info(
-        `Displaying weights in ${useMetric ? "kilograms" : "pounds"}`,
-        {
-          icon: <Info size={16} />,
-          id: "unit-preference", // Prevent duplicate toasts
-        }
-      );
+    if (isError) {
+      toast.error("Failed to load session details");
     }
-  }, [useMetric, isLoadingUnits, sessionExercises.length]);
+  }, [isError]);
 
   // Calculate values for display
   const calculateValues = () => {
@@ -145,7 +65,7 @@ export default function ViewSession() {
     const durationSeconds = Math.floor((durationMs % (1000 * 60)) / 1000);
 
     // Group exercises - use a unique key that includes exercise ID
-    const exerciseGroups = sessionExercises.reduce((groups, exercise) => {
+    const exerciseGroups = sessionExercises.reduce((groups: any, exercise: any) => {
       const exerciseName = exercise.exercise.name;
       const exerciseId = exercise.exercise.id;
 

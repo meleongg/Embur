@@ -31,8 +31,10 @@ import {
 } from "@nextui-org/react";
 import { ArrowDown, ArrowUp, Dumbbell, Trash2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { queryKeys } from "@/lib/query-keys";
+import { toast, toastDebug } from "@/lib/toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Fetch workout data
 const getWorkoutData = async (supabase: any, workoutId: string) => {
@@ -85,6 +87,7 @@ export default function EditWorkout() {
   const params = useParams();
   const workoutId = params.id as string;
   const supabase = createClient();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const [workout, setWorkout] = useState<any | null>(null);
   const [workoutExercises, setWorkoutExercises] = useState<any[]>([]);
@@ -122,7 +125,6 @@ export default function EditWorkout() {
     onClose: onDeleteClose,
   } = useDisclosure();
 
-  const hasShownLoadToast = useRef(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -249,11 +251,6 @@ export default function EditWorkout() {
         setWorkout(workoutData);
         setWorkoutExercises(exercisesData);
 
-        // Only show toast once
-        if (!hasShownLoadToast.current) {
-          toast.success(`Workout "${workoutData.name}" loaded successfully`);
-          hasShownLoadToast.current = true;
-        }
       } catch (err) {
         console.error(err);
         setError("Failed to fetch workout details");
@@ -331,6 +328,10 @@ export default function EditWorkout() {
       // Show success toast and dismiss loading toast
       toast.dismiss(toastId);
       toast.success(`${insertedExercise.name} added to your exercise library!`);
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.exercises.list(),
+      });
 
       onCustomClose();
       fetchExercises(currentPage); // Refresh the exercises list
@@ -440,7 +441,10 @@ export default function EditWorkout() {
       toast.dismiss(toastId);
       toast.success("Workout updated successfully!");
 
-      // Redirect to the workout details page
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.workouts.all,
+      });
+
       router.push(`/protected/workouts/${workoutId}`);
       setIsSaving(false);
     } catch (error: any) {
@@ -488,7 +492,7 @@ export default function EditWorkout() {
       if (!confirmed) {
         return;
       }
-      toast.info("Changes discarded");
+      toastDebug("Changes discarded");
     }
 
     router.push(`/protected/workouts/${workoutId}`);
@@ -706,7 +710,7 @@ export default function EditWorkout() {
                                     exercise_order: i,
                                   }));
                                 });
-                                toast.success("Exercise moved up");
+                                toastDebug("Exercise moved up");
                               }}
                             >
                               <ArrowUp className="h-4 w-4" />
@@ -735,7 +739,7 @@ export default function EditWorkout() {
                                     exercise_order: i,
                                   }));
                                 });
-                                toast.success("Exercise moved down");
+                                toastDebug("Exercise moved down");
                               }}
                             >
                               <ArrowDown className="h-4 w-4" />
