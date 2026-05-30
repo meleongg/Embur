@@ -8,10 +8,10 @@ export default function PrivacyPolicy() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">1. Introduction</h2>
         <p>
-          Welcome to Embur ("we," "our," or "us"). We respect your privacy
-          and are committed to protecting your personal data. This privacy
-          policy explains how we collect, use, and safeguard your information
-          when you use our fitness tracking application.
+          Welcome to Embur ("we," "our," or "us"). We respect your privacy and
+          are committed to protecting your personal data. This privacy policy
+          explains how we collect, use, and safeguard your information when you
+          use our fitness tracking application.
         </p>
       </section>
 
@@ -97,10 +97,10 @@ export default function PrivacyPolicy() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">7. Cookies and Local Storage</h2>
         <p>
-          Embur uses browser local storage to enhance your experience by
-          storing certain preferences and session information directly on your
-          device. This helps us maintain your active workout sessions and
-          preferences between visits.
+          Embur uses browser local storage to enhance your experience by storing
+          certain preferences and session information directly on your device.
+          This helps us maintain your active workout sessions and preferences
+          between visits.
         </p>
       </section>
 

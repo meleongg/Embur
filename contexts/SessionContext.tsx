@@ -77,10 +77,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window === "undefined") return;
 
     const loadSession = async () => {
-      migrateLocalStorageKey(
-        SESSION_STORAGE_KEY,
-        LEGACY_SESSION_STORAGE_KEY
-      );
+      migrateLocalStorageKey(SESSION_STORAGE_KEY, LEGACY_SESSION_STORAGE_KEY);
 
       try {
         // Try IndexedDB first (most reliable for PWAs)

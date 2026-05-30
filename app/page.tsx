@@ -24,11 +24,11 @@ export default function Home() {
             <LandingHeroLogo />
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 tracking-tight">
-            Keep your training going
+            Stay consistent
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Embur is a calm strength training log. Log workouts, build
-            consistency, and see progress compound over time.
+            Embur is a calm strength training log. Show up, log your workouts,
+            and watch your progress add up over time.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

@@ -56,7 +56,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {collapsed ? (
             <EmburLogo size={36} />
           ) : (
-            <Link href="/protected/workouts" className="flex items-center gap-2 min-w-0">
+            <Link
+              href="/protected/workouts"
+              className="flex items-center gap-2 min-w-0"
+            >
               <EmburLogo size={32} />
               <span className="text-lg font-bold tracking-tight text-foreground truncate">
                 Embur

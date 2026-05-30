@@ -42,8 +42,8 @@ export default function TermsOfService() {
         <ul className="list-disc pl-5 mb-4">
           <li>You retain ownership of your content</li>
           <li>
-            You grant Embur a non-exclusive, worldwide, royalty-free license
-            to use, display, and store this content solely for the purpose of
+            You grant Embur a non-exclusive, worldwide, royalty-free license to
+            use, display, and store this content solely for the purpose of
             providing the service to you
           </li>
           <li>
@@ -71,8 +71,8 @@ export default function TermsOfService() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">5. Intellectual Property</h2>
         <p>
-          The Embur service, including its design, logo, software, and
-          content created by us, is protected by copyright, trademark, and other
+          The Embur service, including its design, logo, software, and content
+          created by us, is protected by copyright, trademark, and other
           intellectual property laws. You may not copy, modify, distribute, or
           create derivative works based on our service without our explicit
           permission.
@@ -82,9 +82,9 @@ export default function TermsOfService() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">6. Fitness Disclaimer</h2>
         <p>
-          Embur is designed to help track fitness activities and is not
-          intended to provide medical advice. The information provided through
-          our service is for informational and educational purposes only.
+          Embur is designed to help track fitness activities and is not intended
+          to provide medical advice. The information provided through our
+          service is for informational and educational purposes only.
         </p>
         <p className="mt-2">
           Before starting any exercise program or making significant changes to
@@ -97,10 +97,10 @@ export default function TermsOfService() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">7. Limitation of Liability</h2>
         <p>
-          To the maximum extent permitted by law, Embur and its operators
-          shall not be liable for any indirect, incidental, special,
-          consequential, or punitive damages resulting from your use or
-          inability to use the service.
+          To the maximum extent permitted by law, Embur and its operators shall
+          not be liable for any indirect, incidental, special, consequential, or
+          punitive damages resulting from your use or inability to use the
+          service.
         </p>
         <p className="mt-2">
           Embur is provided on an "as is" and "as available" basis without
@@ -113,10 +113,10 @@ export default function TermsOfService() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">8. Termination</h2>
         <p>
-          We may terminate or suspend your access to Embur immediately,
-          without prior notice or liability, for any reason, including breach of
-          these Terms of Service. Upon termination, your right to use the
-          service will cease immediately.
+          We may terminate or suspend your access to Embur immediately, without
+          prior notice or liability, for any reason, including breach of these
+          Terms of Service. Upon termination, your right to use the service will
+          cease immediately.
         </p>
       </section>
 
@@ -126,8 +126,7 @@ export default function TermsOfService() {
           We reserve the right to modify these terms at any time. We will
           provide notice of significant changes by posting the updated terms on
           this page and updating the "Last updated" date. Your continued use of
-          Embur after such changes constitutes your acceptance of the new
-          terms.
+          Embur after such changes constitutes your acceptance of the new terms.
         </p>
       </section>
 

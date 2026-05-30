@@ -39,10 +39,9 @@ async function migrateLegacyDb(
 ): Promise<ActiveSessionState | null> {
   try {
     const legacyDb = await openSessionDb(LEGACY_IDB_NAME);
-    const session = (await legacyDb.get(
-      "activeSession",
-      "active"
-    )) as ActiveSessionState | undefined;
+    const session = (await legacyDb.get("activeSession", "active")) as
+      | ActiveSessionState
+      | undefined;
 
     if (!session) return null;
 
@@ -57,10 +56,9 @@ async function migrateLegacyDb(
 export const db = {
   async init() {
     const database = await openSessionDb(IDB_NAME);
-    const existing = (await database.get(
-      "activeSession",
-      "active"
-    )) as ActiveSessionState | undefined;
+    const existing = (await database.get("activeSession", "active")) as
+      | ActiveSessionState
+      | undefined;
 
     if (!existing) {
       await migrateLegacyDb(database);
@@ -86,10 +84,9 @@ export const db = {
   async getActiveSession(): Promise<ActiveSessionState | null> {
     try {
       const database = await this.init();
-      const session = (await database.get(
-        "activeSession",
-        "active"
-      )) as ActiveSessionState | undefined;
+      const session = (await database.get("activeSession", "active")) as
+        | ActiveSessionState
+        | undefined;
       return session || null;
     } catch (error) {
       console.error("Failed to retrieve active session from IndexedDB:", error);
