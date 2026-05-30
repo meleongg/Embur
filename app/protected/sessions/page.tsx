@@ -44,17 +44,13 @@ const calculateWorkoutsThisWeek = (sessions: any[]) => {
 
 const calculateTotalWeight = (sessions: any[]) => {
   return sessions.reduce((total, session) => {
-    const sessionTotal = session.session_exercises.reduce(
-      (acc: number, ex: any) => acc + ex.weight * ex.reps,
-      0
-    );
-    return total + sessionTotal;
+    return total + (session.total_volume ?? 0);
   }, 0);
 };
 
 const calculateTotalSets = (sessions: any[]) => {
   return sessions.reduce(
-    (total, session) => total + session.session_exercises.length,
+    (total, session) => total + (session.total_sets ?? 0),
     0
   );
 };
@@ -415,9 +411,7 @@ export default function SessionsPage() {
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Dumbbell className="h-3.5 w-3.5" />
-                                    <span>
-                                      {session.session_exercises.length} sets
-                                    </span>
+                                    <span>{session.total_sets ?? 0} sets</span>
                                   </div>
                                 </div>
                               </div>

@@ -14,9 +14,14 @@ export async function fetchSessionsList() {
     .from("sessions")
     .select(
       `
-      *,
-      workout:workouts(*),
-      session_exercises(*)
+      id,
+      user_id,
+      workout_id,
+      started_at,
+      ended_at,
+      total_sets,
+      total_volume,
+      workout:workouts(id, name)
     `
     )
     .eq("user_id", user.id)

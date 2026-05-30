@@ -24,6 +24,7 @@ export async function fetchAnalyticsSummary() {
         max_reps,
         max_volume,
         updated_at,
+        pr_achieved_at,
         exercises(name)
       `
       )
@@ -40,7 +41,7 @@ export async function fetchAnalyticsSummary() {
       max_weight: record.max_weight || 0,
       max_reps: record.max_reps || 0,
       max_volume: record.max_volume || 0,
-      date: record.updated_at,
+      date: record.pr_achieved_at ?? record.updated_at,
     })) ?? [];
 
   return {

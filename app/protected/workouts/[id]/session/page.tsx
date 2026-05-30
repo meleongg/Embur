@@ -54,6 +54,11 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast, toastDebug } from "@/lib/toast";
+import {
+  computeSessionTotals,
+  upsertAnalyticsBests,
+  upsertAnalyticsFromSessionExercises,
+} from "@/lib/analytics-upsert";
 
 // Fetch workout data
 const getWorkoutData = async (supabase: any, workoutId: string) => {
@@ -730,6 +735,8 @@ export default function WorkoutSession() {
     setIsSubmitting(true);
 
     try {
+      const { totalSets, totalVolume } = computeSessionTotals(sessionExercises);
+
       const { data: session, error: sessionError } = await supabase
         .from("sessions")
         .insert({
@@ -737,6 +744,8 @@ export default function WorkoutSession() {
           workout_id: workoutId,
           started_at: sessionStartTime || new Date().toISOString(),
           ended_at: endTime,
+          total_sets: totalSets,
+          total_volume: totalVolume,
         })
         .select()
         .single();
@@ -772,6 +781,12 @@ export default function WorkoutSession() {
           }
         }
       }
+
+      await upsertAnalyticsFromSessionExercises(
+        supabase,
+        user.id,
+        sessionExercises
+      );
 
       // After successful session submission
       endSession();
@@ -898,48 +913,12 @@ export default function WorkoutSession() {
           updateCount++;
 
           // Always update analytics to establish baseline or improve existing records
-          // This handles both first-time exercises and PR updates
           if (update.weight > 0 || update.reps > 0) {
-            try {
-              // First, get existing analytics to only update fields that are improvements
-              const { data: existingAnalytics } = await supabase
-                .from("analytics")
-                .select("max_weight, max_reps, max_volume")
-                .eq("user_id", user.id)
-                .eq("exercise_id", update.exercise_id)
-                .single();
-
-              const currentMaxWeight = existingAnalytics?.max_weight || 0;
-              const currentMaxReps = existingAnalytics?.max_reps || 0;
-              const currentMaxVolume = existingAnalytics?.max_volume || 0;
-
-              // For first-time exercises or improvements, update the value
-              const newMaxWeight = Math.max(update.weight, currentMaxWeight);
-              const newMaxReps = Math.max(update.reps, currentMaxReps);
-              const newMaxVolume = Math.max(update.volume, currentMaxVolume);
-
-              const { error: analyticsError } = await supabase
-                .from("analytics")
-                .upsert(
-                  {
-                    user_id: user.id,
-                    exercise_id: update.exercise_id,
-                    max_weight: newMaxWeight,
-                    max_reps: newMaxReps,
-                    max_volume: newMaxVolume,
-                    updated_at: new Date().toISOString(),
-                  },
-                  {
-                    onConflict: "user_id,exercise_id",
-                  }
-                );
-
-              if (analyticsError) {
-                console.error("Analytics update error:", analyticsError);
-              }
-            } catch (err) {
-              console.error("Exception in analytics update:", err);
-            }
+            await upsertAnalyticsBests(supabase, user.id, update.exercise_id, {
+              maxWeight: update.weight,
+              maxReps: update.reps,
+              maxVolume: update.volume,
+            });
           }
         }
       }
@@ -948,36 +927,11 @@ export default function WorkoutSession() {
       for (const [exerciseId, data] of Object.entries(newExercisesToAdd)) {
         // Track analytics for selected exercises that have some activity (reps > 0 or weight > 0)
         if (data.selected && (data.weight > 0 || data.reps > 0)) {
-          try {
-            const volume = data.weight * data.reps;
-            const { error: analyticsError } = await supabase
-              .from("analytics")
-              .upsert(
-                {
-                  user_id: user.id,
-                  exercise_id: exerciseId,
-                  max_weight: data.weight,
-                  max_reps: data.reps,
-                  max_volume: volume,
-                  updated_at: new Date().toISOString(),
-                },
-                {
-                  onConflict: "user_id,exercise_id",
-                }
-              );
-
-            if (analyticsError) {
-              console.error(
-                "Analytics update error for new exercise:",
-                analyticsError
-              );
-            }
-          } catch (err) {
-            console.error(
-              "Exception in analytics update for new exercise:",
-              err
-            );
-          }
+          await upsertAnalyticsBests(supabase, user.id, exerciseId, {
+            maxWeight: data.weight,
+            maxReps: data.reps,
+            maxVolume: data.weight * data.reps,
+          });
         }
       }
 
