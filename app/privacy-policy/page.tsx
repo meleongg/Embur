@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">1. Introduction</h2>
         <p>
-          Welcome to FitFlash ("we," "our," or "us"). We respect your privacy
+          Welcome to Embur ("we," "our," or "us"). We respect your privacy
           and are committed to protecting your personal data. This privacy
           policy explains how we collect, use, and safeguard your information
           when you use our fitness tracking application.
@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
         </h2>
         <p>We use your information to:</p>
         <ul className="list-disc pl-5 mb-4">
-          <li>Provide and maintain the FitFlash service</li>
+          <li>Provide and maintain the Embur service</li>
           <li>Store and display your workout history and progress</li>
           <li>Generate analytics and insights about your fitness journey</li>
           <li>Improve and enhance the functionality of our application</li>
@@ -97,7 +97,7 @@ export default function PrivacyPolicy() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">7. Cookies and Local Storage</h2>
         <p>
-          FitFlash uses browser local storage to enhance your experience by
+          Embur uses browser local storage to enhance your experience by
           storing certain preferences and session information directly on your
           device. This helps us maintain your active workout sessions and
           preferences between visits.
@@ -122,7 +122,7 @@ export default function PrivacyPolicy() {
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">9. Children's Privacy</h2>
         <p>
-          FitFlash is not intended for children under 13 years of age. We do not
+          Embur is not intended for children under 13 years of age. We do not
           knowingly collect personal information from children under 13.
         </p>
       </section>

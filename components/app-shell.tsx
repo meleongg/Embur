@@ -1,20 +1,25 @@
 "use client";
 
+import EmburLogo from "@/components/embur-logo";
 import Navbar from "@/components/ui/navbar";
 import { appNavItems } from "@/lib/nav-config";
+import {
+  LEGACY_SIDEBAR_STORAGE_KEY,
+  migrateLocalStorageKey,
+  SIDEBAR_STORAGE_KEY,
+} from "@/lib/storage-keys";
 import { cn } from "@/lib/utils";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const SIDEBAR_STORAGE_KEY = "fitflash-sidebar-collapsed";
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
+    migrateLocalStorageKey(SIDEBAR_STORAGE_KEY, LEGACY_SIDEBAR_STORAGE_KEY);
     try {
       setCollapsed(localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true");
     } catch {
@@ -45,20 +50,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             "flex items-center gap-2 py-6",
-            collapsed ? "justify-center px-2" : "justify-between px-4"
+            collapsed ? "flex-col px-2" : "justify-between px-4"
           )}
         >
-          {!collapsed && (
-            <p className="text-lg font-bold tracking-tight text-foreground truncate">
-              FitFlash
-            </p>
+          {collapsed ? (
+            <EmburLogo size={36} />
+          ) : (
+            <Link href="/protected/workouts" className="flex items-center gap-2 min-w-0">
+              <EmburLogo size={32} />
+              <span className="text-lg font-bold tracking-tight text-foreground truncate">
+                Embur
+              </span>
+            </Link>
           )}
           <button
             type="button"
             onClick={toggleCollapsed}
             className={cn(
               "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-              collapsed && "mx-auto"
+              collapsed && "mt-2"
             )}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-expanded={!collapsed}

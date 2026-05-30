@@ -1,6 +1,8 @@
 "use client";
 
 import { useSession } from "@/contexts/SessionContext";
+import { SESSION_STORAGE_KEY } from "@/lib/storage-keys";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@nextui-org/react";
 import { LogOut } from "lucide-react";
@@ -33,10 +35,9 @@ export default function LogoutButton() {
   const clearAppLocalStorage = () => {
     // Clear specific keys
     const keysToRemove = [
-      "FitFlash-active-session",
+      SESSION_STORAGE_KEY,
       "rest-timer-duration",
-      "FitFlash-theme",
-      // Add any other app-specific keys here
+      THEME_STORAGE_KEY,
     ];
 
     keysToRemove.forEach((key) => localStorage.removeItem(key));

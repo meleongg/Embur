@@ -1,4 +1,8 @@
+"use client";
+
 import MarketingNav from "@/components/marketing-nav";
+import MarketingBrand from "@/components/marketing-brand";
+import LandingHeroLogo from "@/components/landing-hero-logo";
 import {
   Activity,
   ArrowRight,
@@ -9,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default async function Home() {
+export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <MarketingNav />
@@ -17,16 +21,14 @@ export default async function Home() {
       <main className="flex-1 flex flex-col gap-12 px-4 py-8 sm:px-6 lg:px-8">
         <section className="max-w-4xl mx-auto text-center pt-12 pb-16">
           <div className="flex justify-center mb-6">
-            <div className="bg-primary p-4 rounded-full shadow-md">
-              <Dumbbell className="h-10 w-10 text-primary-foreground" />
-            </div>
+            <LandingHeroLogo />
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-foreground mb-6 tracking-tight">
-            Track Your Fitness Journey with Ease
+            Keep your training going
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            FitFlash helps you track workouts, monitor progress, and achieve
-            your fitness goals with a simple, intuitive interface.
+            Embur is a calm strength training log. Log workouts, build
+            consistency, and see progress compound over time.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -47,11 +49,11 @@ export default async function Home() {
         <section id="features" className="max-w-6xl mx-auto py-12">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-foreground mb-4">
-              Everything You Need
+              Built for the gym floor
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              FitFlash provides all the tools you need to track and improve your
-              fitness journey
+              Everything you need to log sessions and review progress — without
+              the noise.
             </p>
           </div>
 
@@ -64,8 +66,8 @@ export default async function Home() {
                 Workout Tracking
               </h3>
               <p className="text-muted-foreground">
-                Log your exercises, sets, reps, and weights with an intuitive
-                interface designed for the gym.
+                Log exercises, sets, reps, and weights with an interface
+                designed for between-set rest.
               </p>
             </div>
 
@@ -77,8 +79,8 @@ export default async function Home() {
                 Progress Analytics
               </h3>
               <p className="text-muted-foreground">
-                Visualize your progress with detailed charts and metrics to keep
-                you motivated.
+                Charts and personal records that show whether your training is
+                moving forward.
               </p>
             </div>
 
@@ -90,8 +92,8 @@ export default async function Home() {
                 Workout Planning
               </h3>
               <p className="text-muted-foreground">
-                Create and schedule your workouts in advance to stay consistent
-                with your routine.
+                Build workout templates so you spend less time planning and more
+                time lifting.
               </p>
             </div>
 
@@ -103,8 +105,8 @@ export default async function Home() {
                 Exercise Library
               </h3>
               <p className="text-muted-foreground">
-                Access a comprehensive library of exercises with instructions
-                and muscle targeting information.
+                Browse default exercises or add your own to match how you
+                actually train.
               </p>
             </div>
 
@@ -116,8 +118,8 @@ export default async function Home() {
                 Personal Records
               </h3>
               <p className="text-muted-foreground">
-                Track your personal bests and celebrate your achievements as you
-                progress.
+                Track PRs automatically and revisit them when you want a clear
+                picture of progress.
               </p>
             </div>
 
@@ -141,7 +143,8 @@ export default async function Home() {
                 Data Security
               </h3>
               <p className="text-muted-foreground">
-                Your fitness data is securely stored and accessible only to you.
+                Your training data is stored securely and accessible only to
+                you.
               </p>
             </div>
           </div>
@@ -150,10 +153,11 @@ export default async function Home() {
         <section className="bg-primary text-primary-foreground py-16 sm:py-20 px-6 sm:px-10 rounded-2xl max-w-6xl mx-auto shadow-lg">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
-              Ready to start your fitness journey?
+              Ready to keep the ember going?
             </h2>
             <p className="text-lg sm:text-xl mb-10 opacity-90 leading-relaxed">
-              Get started with tracking your fitness progress with FitFlash.
+              Start logging with Embur and build a training history you can
+              trust.
             </p>
             <Link
               href="/sign-up"
@@ -169,17 +173,10 @@ export default async function Home() {
       <footer className="bg-card border-t border-border py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center flex-col md:flex-row">
-            <div className="flex items-center mb-6 md:mb-0">
-              <div className="bg-primary p-2 rounded-full">
-                <Dumbbell className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="ml-2 text-xl font-bold text-foreground">
-                FitFlash
-              </span>
-            </div>
+            <MarketingBrand logoSize={28} className="mb-6 md:mb-0" />
             <div className="flex flex-col items-center md:items-end">
               <p className="text-muted-foreground text-sm mb-2">
-                © 2026 FitFlash. All rights reserved.
+                © 2026 Embur. All rights reserved.
               </p>
               <div className="flex gap-4">
                 <Link

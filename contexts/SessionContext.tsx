@@ -2,6 +2,11 @@
 
 import { db } from "@/utils/indexedDB";
 import {
+  LEGACY_SESSION_STORAGE_KEY,
+  migrateLocalStorageKey,
+  SESSION_STORAGE_KEY,
+} from "@/lib/storage-keys";
+import {
   createContext,
   ReactNode,
   useContext,
@@ -56,7 +61,7 @@ const SessionContext = createContext<SessionContextProps | undefined>(
   undefined
 );
 
-export const SESSION_STORAGE_KEY = "FitFlash-active-session";
+export { SESSION_STORAGE_KEY } from "@/lib/storage-keys";
 
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(
@@ -72,6 +77,11 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     if (typeof window === "undefined") return;
 
     const loadSession = async () => {
+      migrateLocalStorageKey(
+        SESSION_STORAGE_KEY,
+        LEGACY_SESSION_STORAGE_KEY
+      );
+
       try {
         // Try IndexedDB first (most reliable for PWAs)
         const idbSession = await db.getActiveSession();

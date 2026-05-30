@@ -1,10 +1,10 @@
-import { openDB } from "idb";
+import { IDB_NAME, LEGACY_IDB_NAME } from "@/lib/storage-keys";
+import { openDB, type IDBPDatabase } from "idb";
 
-const DB_NAME = "FitFlash-offline";
 const DB_VERSION = 2;
 
 export interface ActiveSessionState {
-  id: string; // user_id
+  id: string;
   workoutId: string;
   workoutName: string;
   startTime: string;
@@ -24,16 +24,49 @@ export interface ActiveSessionState {
   }>;
 }
 
+function openSessionDb(name: string) {
+  return openDB(name, DB_VERSION, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains("activeSession")) {
+        db.createObjectStore("activeSession", { keyPath: "id" });
+      }
+    },
+  });
+}
+
+async function migrateLegacyDb(
+  database: IDBPDatabase
+): Promise<ActiveSessionState | null> {
+  try {
+    const legacyDb = await openSessionDb(LEGACY_IDB_NAME);
+    const session = (await legacyDb.get(
+      "activeSession",
+      "active"
+    )) as ActiveSessionState | undefined;
+
+    if (!session) return null;
+
+    await database.put("activeSession", session);
+    await legacyDb.delete("activeSession", "active");
+    return session;
+  } catch {
+    return null;
+  }
+}
+
 export const db = {
   async init() {
-    return openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        // Store for active session state (in-progress workouts)
-        if (!db.objectStoreNames.contains("activeSession")) {
-          db.createObjectStore("activeSession", { keyPath: "id" });
-        }
-      },
-    });
+    const database = await openSessionDb(IDB_NAME);
+    const existing = (await database.get(
+      "activeSession",
+      "active"
+    )) as ActiveSessionState | undefined;
+
+    if (!existing) {
+      await migrateLegacyDb(database);
+    }
+
+    return database;
   },
 
   async saveActiveSession(session: ActiveSessionState) {
@@ -53,7 +86,10 @@ export const db = {
   async getActiveSession(): Promise<ActiveSessionState | null> {
     try {
       const database = await this.init();
-      const session = await database.get("activeSession", "active");
+      const session = (await database.get(
+        "activeSession",
+        "active"
+      )) as ActiveSessionState | undefined;
       return session || null;
     } catch (error) {
       console.error("Failed to retrieve active session from IndexedDB:", error);

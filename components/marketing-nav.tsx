@@ -1,6 +1,6 @@
 "use client";
 
-import { Dumbbell } from "lucide-react";
+import MarketingBrand from "@/components/marketing-brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -16,14 +16,9 @@ export default function MarketingNav() {
         <div className="flex justify-between h-16 items-center">
           <Link
             href="/"
-            className="flex items-center hover:opacity-90 transition-opacity"
+            className="hover:opacity-90 transition-opacity"
           >
-            <div className="bg-primary p-2 rounded-full">
-              <Dumbbell className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="ml-2 text-xl font-bold text-foreground">
-              FitFlash
-            </span>
+            <MarketingBrand logoSize={32} />
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">

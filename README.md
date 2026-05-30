@@ -1,10 +1,10 @@
-# FitFlash - Modern Fitness Tracking App
+# Embur — Strength Training Log
 
 **Tech Stack:** Next.js, Supabase, TypeScript, Tailwind CSS, NextUI, ShadCN UI, Recharts
 
 ## Project Overview
 
-FitFlash is a full-stack web application that helps users track their fitness progress. It demonstrates implementation of authentication flows, complex data relationships, analytics visualization, and responsive UI design.
+Embur is a calm strength training log for consistent progress. It demonstrates authentication flows, complex data relationships, analytics visualization, and responsive UI design.
 
 ### Key Features
 
@@ -12,19 +12,19 @@ FitFlash is a full-stack web application that helps users track their fitness pr
 - **Workout Tracking System** - Create, log, and track workout sessions with exercises, sets and reps
 - **Exercise Library** - Searchable database with custom exercise creation
 - **Analytics Dashboard** - Interactive charts showing weight/volume progression and PRs
-- **Responsive Design** - Optimized for both desktop and mobile use
+- **Responsive Design** - Optimized for both desktop and mobile use (PWA)
 
 ## Quick Start
 
 ```bash
 # Clone and install
-git clone https://github.com/meleongg/FitFlash.git
-cd FitFlash
+git clone https://github.com/meleongg/Embur.git
+cd Embur
 npm install
 
 # Configure environment
-cp .env.example [.env.local](http://_vscodecontentref_/0)
-# Add your Supabase credentials to [.env.local](http://_vscodecontentref_/1)
+cp .env.example .env.local
+# Add your Supabase credentials to .env.local
 
 # Run development server
 npm run dev
