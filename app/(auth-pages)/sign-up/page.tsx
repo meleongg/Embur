@@ -1,11 +1,15 @@
 import { signUpAction } from "@/app/actions";
 import type { ReactNode } from "react";
+import AuthFormHeader from "@/components/auth-form-header";
 import { FormMessage, Message } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dumbbell } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
+
+const AUTH_INPUT_CLASS =
+  "w-full h-12 min-h-12 px-4 py-3 text-base border rounded-lg";
 
 export default async function Signup(props: {
   searchParams: Promise<Message>;
@@ -14,7 +18,7 @@ export default async function Signup(props: {
 
   const cardShell = (content: ReactNode) => (
     <div className="w-full max-w-md">
-      <div className="bg-card p-8 rounded-xl border border-border/60 shadow-sm">
+      <div className="bg-card p-6 sm:p-8 rounded-xl border border-border/60 shadow-sm">
         {content}
       </div>
     </div>
@@ -23,11 +27,10 @@ export default async function Signup(props: {
   if ("message" in searchParams) {
     return cardShell(
       <>
-        <div className="flex justify-center mb-4">
-          <div className="bg-primary p-3 rounded-full">
-            <Dumbbell className="h-6 w-6 text-primary-foreground" />
-          </div>
-        </div>
+        <AuthFormHeader
+          title="Check your email"
+          subtitle="We sent you a confirmation link"
+        />
         <FormMessage message={searchParams} />
       </>
     );
@@ -35,21 +38,12 @@ export default async function Signup(props: {
 
   return cardShell(
     <>
-      <div className="mb-6 text-center">
-        <div className="flex justify-center mb-4">
-          <div className="bg-primary p-3 rounded-full">
-            <Dumbbell className="h-6 w-6 text-primary-foreground" />
-          </div>
-        </div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Create an account
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Start logging with Embur
-        </p>
-      </div>
+      <AuthFormHeader
+        title="Create an account"
+        subtitle="Start logging with Embur"
+      />
 
-      <form className="flex flex-col gap-4">
+      <form className="flex flex-col gap-5">
         <div className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium">
             Email
@@ -59,7 +53,7 @@ export default async function Signup(props: {
             id="email"
             placeholder="you@example.com"
             type="email"
-            className="w-full h-10 px-3 py-2 border rounded-md"
+            className={AUTH_INPUT_CLASS}
             required
           />
         </div>
@@ -73,27 +67,27 @@ export default async function Signup(props: {
             id="password"
             name="password"
             placeholder="Create a password"
-            className="w-full h-10 px-3 py-2 border rounded-md"
+            className={AUTH_INPUT_CLASS}
             minLength={6}
             required
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground pt-0.5">
             Password must be at least 6 characters long
           </p>
         </div>
 
-        <div className="mt-3">
-          <div className="flex items-start">
+        <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
+          <div className="flex items-start gap-3">
             <input
               type="checkbox"
               id="terms-agreement"
               name="terms-agreement"
-              className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary"
               required
             />
             <label
               htmlFor="terms-agreement"
-              className="ml-2 text-xs text-muted-foreground"
+              className="text-xs text-muted-foreground leading-relaxed"
             >
               I have read and agree to the{" "}
               <Link
@@ -111,11 +105,11 @@ export default async function Signup(props: {
               >
                 Privacy Policy
               </Link>
-              <span className="text-destructive ml-1">*</span>
+              <span className="text-destructive ml-0.5">*</span>
             </label>
           </div>
           <div
-            className="text-xs text-destructive mt-1 hidden"
+            className="text-xs text-destructive mt-2 hidden"
             id="terms-error"
           >
             You must agree to the Terms of Service and Privacy Policy to
@@ -128,13 +122,16 @@ export default async function Signup(props: {
         <SubmitButton
           pendingText="Signing up..."
           formAction={signUpAction}
-          className="w-full bg-primary text-primary-foreground py-2 rounded-lg font-medium hover:opacity-90 transition-opacity mt-2"
+          className={cn(
+            "w-full h-12 bg-primary text-primary-foreground rounded-lg",
+            "font-medium hover:opacity-90 transition-opacity mt-1"
+          )}
         >
           Create account
         </SubmitButton>
       </form>
 
-      <div className="text-center mt-6">
+      <div className="text-center mt-8">
         <p className="text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link

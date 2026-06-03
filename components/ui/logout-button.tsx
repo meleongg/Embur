@@ -1,29 +1,31 @@
 "use client";
 
 import { useSession } from "@/contexts/SessionContext";
-import { SESSION_STORAGE_KEY } from "@/lib/storage-keys";
-import { THEME_STORAGE_KEY } from "@/lib/theme";
+import { signOutUser } from "@/lib/sign-out";
+import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@nextui-org/react";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { toast } from "@/lib/toast";
 
-export default function LogoutButton() {
+type LogoutButtonProps = {
+  variant?: "icon" | "full";
+  className?: string;
+};
+
+export default function LogoutButton({
+  variant = "icon",
+  className,
+}: LogoutButtonProps) {
   const router = useRouter();
   const supabase = createClient();
   const { endSession } = useSession();
 
   const handleSignOut = async () => {
     try {
-      // First clear all session data
-      endSession();
-
-      // Then clear any other app state stored in localStorage
-      clearAppLocalStorage();
-
-      // Finally, sign out from Supabase
-      await supabase.auth.signOut();
+      const toastId = toast.loading("Signing you out...");
+      await signOutUser(supabase, { endSession });
+      toast.success("Signed out successfully", { id: toastId, duration: 3000 });
       router.push("/sign-in");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -31,20 +33,19 @@ export default function LogoutButton() {
     }
   };
 
-  // Helper function to clear all app-related localStorage items
-  const clearAppLocalStorage = () => {
-    // Clear specific keys
-    const keysToRemove = [
-      SESSION_STORAGE_KEY,
-      "rest-timer-duration",
-      THEME_STORAGE_KEY,
-    ];
-
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
-
-    // Force storage event to ensure components update
-    window.dispatchEvent(new Event("storage"));
-  };
+  if (variant === "full") {
+    return (
+      <Button
+        color="default"
+        variant="bordered"
+        startContent={<LogOut size={18} />}
+        onPress={handleSignOut}
+        className={className ?? "h-11 w-full sm:w-fit font-medium px-6"}
+      >
+        Sign out
+      </Button>
+    );
+  }
 
   return (
     <Button isIconOnly color="primary" onPress={handleSignOut}>
