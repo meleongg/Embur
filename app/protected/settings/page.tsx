@@ -3,7 +3,9 @@
 import { useTheme } from "@/components/theme-provider";
 import LogoutButton from "@/components/ui/logout-button";
 import PageTitle from "@/components/ui/page-title";
+import { queryKeys } from "@/lib/query-keys";
 import { themeFromDarkMode } from "@/lib/theme";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -15,11 +17,11 @@ import {
   Input,
   Select,
   SelectItem,
-  Switch,
   Tab,
   Tabs,
   useDisclosure,
 } from "@nextui-org/react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Check,
@@ -33,13 +35,9 @@ import {
   Sun,
   Trash2,
   User,
-  Weight,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { queryKeys } from "@/lib/query-keys";
-import { toast } from "@/lib/toast";
-import { useQueryClient } from "@tanstack/react-query";
 
 // Default user preferences
 const DEFAULT_PREFERENCES = {
@@ -49,30 +47,96 @@ const DEFAULT_PREFERENCES = {
 };
 
 const SETTINGS_INPUT_CLASSNAMES = {
-  label: "text-sm font-medium text-foreground pb-1",
   input: "text-base",
-  inputWrapper:
-    "h-12 min-h-[3rem] px-3 py-2 shadow-sm bg-content1 dark:bg-content2 border border-default-200",
-  innerWrapper: "gap-1.5",
+  inputWrapper: "h-12 min-h-[3rem] px-4 shadow-sm bg-content1 dark:bg-content2",
+  innerWrapper: "gap-2",
 };
 
 const SETTINGS_SELECT_CLASSNAMES = {
-  label: SETTINGS_INPUT_CLASSNAMES.label,
-  trigger: "h-12 min-h-[3rem] px-3 py-2 shadow-sm",
+  label: "text-sm font-medium text-foreground",
+  trigger:
+    "h-12 min-h-[3rem] px-4 shadow-sm bg-content1 dark:bg-content2 border border-default-200",
   value: "text-base",
-  innerWrapper: "gap-1.5",
+  innerWrapper: "gap-2",
+  mainWrapper: "gap-4",
+};
+
+const SETTINGS_FIELD_PROPS = {
+  variant: "bordered" as const,
+  radius: "lg" as const,
 };
 
 const SECTION_CARD_CLASS = "shadow-sm border border-border/40";
 const SECTION_HEADER_CLASS =
-  "flex flex-col items-start gap-1.5 py-5 px-5 md:px-8";
-const SECTION_BODY_CLASS = "flex flex-col gap-6 py-6 px-5 md:px-8";
+  "flex flex-col items-start gap-2 py-5 px-5 md:px-8";
+const SECTION_BODY_CLASS = "flex flex-col gap-6 py-6 px-5 md:px-8 pt-8";
 /** Keeps inputs and action buttons from stretching across wide layouts */
 const SETTINGS_FORM_WIDTH = "w-full max-w-xl";
 const SETTINGS_ACTION_BUTTON_CLASS = "h-11 w-full sm:w-fit font-medium px-6";
 
 function SettingsActionRow({ children }: { children: ReactNode }) {
-  return <div className="pt-1 w-full sm:w-fit">{children}</div>;
+  return <div className="pt-4 w-full sm:w-fit">{children}</div>;
+}
+
+function SettingsField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <label className="text-sm font-medium text-foreground leading-snug">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function SegmentedPreference<T extends string>({
+  value,
+  options,
+  onChange,
+  ariaLabel,
+  className,
+}: {
+  value: T;
+  options: { value: T; label: ReactNode }[];
+  onChange: (value: T) => void;
+  ariaLabel: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "inline-flex w-full max-w-[15rem] rounded-xl border border-default-200 bg-content1 dark:bg-content2 p-1 gap-1",
+        className
+      )}
+      role="group"
+      aria-label={ariaLabel}
+    >
+      {options.map((option) => {
+        const selected = value === option.value;
+        return (
+          <Button
+            key={String(option.value)}
+            size="sm"
+            variant={selected ? "solid" : "light"}
+            color={selected ? "primary" : "default"}
+            className={cn(
+              "flex-1 h-10 min-w-0 font-medium text-sm",
+              !selected && "bg-transparent text-default-600"
+            )}
+            onPress={() => onChange(option.value)}
+          >
+            {option.label}
+          </Button>
+        );
+      })}
+    </div>
+  );
 }
 
 function SettingsSection({
@@ -102,7 +166,7 @@ function SettingsSection({
           <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
         </div>
         {description && (
-          <p className="text-sm text-default-500 leading-relaxed">
+          <p className="text-sm text-default-500 leading-relaxed pr-1 max-w-prose">
             {description}
           </p>
         )}
@@ -124,7 +188,7 @@ function PreferenceRow({
 }) {
   return (
     <div className="rounded-xl border border-border/50 bg-default-50/50 dark:bg-default-100/5 p-4 md:p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-      <div className="space-y-1 min-w-0">
+      <div className="space-y-1.5 min-w-0 pr-2">
         <p className="font-medium text-foreground">{title}</p>
         <p className="text-sm text-default-500 leading-relaxed">
           {description}
@@ -486,13 +550,13 @@ export default function SettingsPage() {
           <div className="space-y-6 w-full py-2 md:py-3">
             <SettingsSection title="Profile Information">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-                <div className="rounded-xl border border-border/50 bg-default-50/40 dark:bg-default-100/5 p-4 md:p-5 space-y-1.5">
+                <div className="rounded-xl border border-border/50 bg-default-50/40 dark:bg-default-100/5 p-5 md:p-6 space-y-2">
                   <p className="text-sm text-default-500">Email address</p>
                   <p className="font-medium text-foreground break-all">
                     {userProfile?.email}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border/50 bg-default-50/40 dark:bg-default-100/5 p-4 md:p-5 space-y-1.5">
+                <div className="rounded-xl border border-border/50 bg-default-50/40 dark:bg-default-100/5 p-5 md:p-6 space-y-2">
                   <p className="text-sm text-default-500">Account created</p>
                   <p className="font-medium text-foreground">
                     {userProfile?.created_at
@@ -514,15 +578,20 @@ export default function SettingsPage() {
               title="Update email"
               description="We'll send a verification link to your new address."
             >
-              <div className={cn(SETTINGS_FORM_WIDTH, "flex flex-col gap-6")}>
-                <Input
-                  label="New email address"
-                  placeholder="Enter your new email address"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  startContent={<Mail size={18} className="text-default-400" />}
-                  classNames={SETTINGS_INPUT_CLASSNAMES}
-                />
+              <div className={cn(SETTINGS_FORM_WIDTH, "flex flex-col gap-10")}>
+                <SettingsField label="New email address">
+                  <Input
+                    {...SETTINGS_FIELD_PROPS}
+                    aria-label="New email address"
+                    placeholder="you@example.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    startContent={
+                      <Mail size={18} className="text-default-400 shrink-0" />
+                    }
+                    classNames={SETTINGS_INPUT_CLASSNAMES}
+                  />
+                </SettingsField>
                 <SettingsActionRow>
                   <Button
                     color="primary"
@@ -538,33 +607,44 @@ export default function SettingsPage() {
             </SettingsSection>
 
             <SettingsSection title="Change password">
-              <div className={cn(SETTINGS_FORM_WIDTH, "flex flex-col gap-6")}>
-                <Input
-                  label="Current password"
-                  placeholder="Enter your current password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  startContent={<Key size={18} className="text-default-400" />}
-                  classNames={SETTINGS_INPUT_CLASSNAMES}
-                />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className={cn(SETTINGS_FORM_WIDTH, "flex flex-col gap-10")}>
+                <SettingsField label="Current password">
                   <Input
-                    label="New password"
-                    placeholder="Enter your new password"
+                    {...SETTINGS_FIELD_PROPS}
+                    aria-label="Current password"
+                    placeholder="Enter your current password"
                     type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    startContent={
+                      <Key size={18} className="text-default-400 shrink-0" />
+                    }
                     classNames={SETTINGS_INPUT_CLASSNAMES}
                   />
-                  <Input
-                    label="Confirm new password"
-                    placeholder="Confirm your new password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    classNames={SETTINGS_INPUT_CLASSNAMES}
-                  />
+                </SettingsField>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
+                  <SettingsField label="New password">
+                    <Input
+                      {...SETTINGS_FIELD_PROPS}
+                      aria-label="New password"
+                      placeholder="Enter new password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      classNames={SETTINGS_INPUT_CLASSNAMES}
+                    />
+                  </SettingsField>
+                  <SettingsField label="Confirm new password">
+                    <Input
+                      {...SETTINGS_FIELD_PROPS}
+                      aria-label="Confirm new password"
+                      placeholder="Confirm new password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      classNames={SETTINGS_INPUT_CLASSNAMES}
+                    />
+                  </SettingsField>
                 </div>
                 <SettingsActionRow>
                   <Button
@@ -599,16 +679,21 @@ export default function SettingsPage() {
               danger
               icon={<AlertTriangle size={18} />}
             >
-              <div className={cn(SETTINGS_FORM_WIDTH, "flex flex-col gap-6")}>
-                <Input
-                  label="Confirm by typing your email"
-                  placeholder="Enter your email to confirm"
-                  value={deleteConfirm}
-                  onChange={(e) => setDeleteConfirm(e.target.value)}
-                  color="danger"
-                  startContent={<Trash2 size={18} className="text-danger" />}
-                  classNames={SETTINGS_INPUT_CLASSNAMES}
-                />
+              <div className={cn(SETTINGS_FORM_WIDTH, "flex flex-col gap-10")}>
+                <SettingsField label="Confirm by typing your email">
+                  <Input
+                    {...SETTINGS_FIELD_PROPS}
+                    aria-label="Confirm by typing your email"
+                    placeholder="Enter your email to confirm"
+                    value={deleteConfirm}
+                    onChange={(e) => setDeleteConfirm(e.target.value)}
+                    color="danger"
+                    startContent={
+                      <Trash2 size={18} className="text-danger shrink-0" />
+                    }
+                    classNames={SETTINGS_INPUT_CLASSNAMES}
+                  />
+                </SettingsField>
                 <SettingsActionRow>
                   <Button
                     color="danger"
@@ -642,17 +727,19 @@ export default function SettingsPage() {
                 title="Weight units"
                 description="Choose between metric (kg) and imperial (lbs)."
               >
-                <Switch
-                  size="lg"
-                  color="primary"
-                  startContent={<span className="text-sm px-0.5">lbs</span>}
-                  endContent={<span className="text-sm px-0.5">kg</span>}
-                  isSelected={preferences.useMetric}
-                  onValueChange={async (isSelected) => {
-                    setPreferences({ ...preferences, useMetric: isSelected });
+                <SegmentedPreference
+                  ariaLabel="Weight units"
+                  value={preferences.useMetric ? "kg" : "lbs"}
+                  options={[
+                    { value: "lbs", label: "lbs" },
+                    { value: "kg", label: "kg" },
+                  ]}
+                  onChange={async (unit) => {
+                    const useMetric = unit === "kg";
+                    setPreferences({ ...preferences, useMetric });
                     try {
                       await persistPreference(
-                        { use_metric: isSelected },
+                        { use_metric: useMetric },
                         {
                           errorMessage:
                             "Units updated locally but failed to save",
@@ -662,7 +749,6 @@ export default function SettingsPage() {
                       /* toast shown in persistPreference */
                     }
                   }}
-                  thumbIcon={<Weight className="text-foreground" size={14} />}
                 />
               </PreferenceRow>
 
@@ -670,22 +756,40 @@ export default function SettingsPage() {
                 title="Theme"
                 description="Switch between light and dark mode."
               >
-                <Switch
-                  size="lg"
-                  color="primary"
-                  startContent={<Sun size={18} className="text-foreground" />}
-                  endContent={<Moon size={18} className="text-foreground" />}
-                  isSelected={preferences.useDarkMode}
-                  onValueChange={async (isSelected) => {
-                    setTheme(themeFromDarkMode(isSelected));
+                <SegmentedPreference
+                  ariaLabel="Theme"
+                  value={preferences.useDarkMode ? "dark" : "light"}
+                  options={[
+                    {
+                      value: "light",
+                      label: (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Sun className="h-4 w-4 shrink-0" />
+                          Light
+                        </span>
+                      ),
+                    },
+                    {
+                      value: "dark",
+                      label: (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Moon className="h-4 w-4 shrink-0" />
+                          Dark
+                        </span>
+                      ),
+                    },
+                  ]}
+                  onChange={async (mode) => {
+                    const useDarkMode = mode === "dark";
+                    setTheme(themeFromDarkMode(useDarkMode));
                     setPreferences({
                       ...preferences,
-                      useDarkMode: isSelected,
+                      useDarkMode,
                     });
 
                     try {
                       await persistPreference(
-                        { use_dark_mode: isSelected },
+                        { use_dark_mode: useDarkMode },
                         {
                           errorMessage:
                             "Theme updated locally but failed to save to account",
@@ -703,8 +807,8 @@ export default function SettingsPage() {
               title="Workout"
               description="Defaults used during live sessions and time estimates."
             >
-              <div className="space-y-3">
-                <div className="space-y-1">
+              <div className="space-y-4">
+                <div className="space-y-2 pr-1">
                   <p className="font-medium text-foreground">
                     Rest between sets
                   </p>
@@ -713,55 +817,58 @@ export default function SettingsPage() {
                     workout time estimates.
                   </p>
                 </div>
-                <Select
-                  label="Rest duration"
-                  selectedKeys={[preferences.defaultRestTimer.toString()]}
-                  className={SETTINGS_FORM_WIDTH}
-                  onChange={async (e) => {
-                    const seconds = parseInt(e.target.value, 10);
-                    if (Number.isNaN(seconds)) return;
+                <SettingsField label="Rest duration">
+                  <Select
+                    {...SETTINGS_FIELD_PROPS}
+                    aria-label="Rest duration"
+                    selectedKeys={[preferences.defaultRestTimer.toString()]}
+                    className="w-full"
+                    onChange={async (e) => {
+                      const seconds = parseInt(e.target.value, 10);
+                      if (Number.isNaN(seconds)) return;
 
-                    setPreferences({
-                      ...preferences,
-                      defaultRestTimer: seconds,
-                    });
+                      setPreferences({
+                        ...preferences,
+                        defaultRestTimer: seconds,
+                      });
 
-                    try {
-                      await persistPreference(
-                        { default_rest_timer: seconds },
-                        {
-                          errorMessage:
-                            "Rest timer updated locally but failed to save",
-                        }
-                      );
-                    } catch {
-                      /* toast shown in persistPreference */
+                      try {
+                        await persistPreference(
+                          { default_rest_timer: seconds },
+                          {
+                            errorMessage:
+                              "Rest timer updated locally but failed to save",
+                          }
+                        );
+                      } catch {
+                        /* toast shown in persistPreference */
+                      }
+                    }}
+                    startContent={
+                      <Clock size={18} className="text-default-400" />
                     }
-                  }}
-                  startContent={
-                    <Clock size={18} className="text-default-400" />
-                  }
-                  classNames={SETTINGS_SELECT_CLASSNAMES}
-                >
-                  <SelectItem key="30" value="30">
-                    30 seconds
-                  </SelectItem>
-                  <SelectItem key="45" value="45">
-                    45 seconds
-                  </SelectItem>
-                  <SelectItem key="60" value="60">
-                    60 seconds
-                  </SelectItem>
-                  <SelectItem key="90" value="90">
-                    90 seconds
-                  </SelectItem>
-                  <SelectItem key="120" value="120">
-                    2 minutes
-                  </SelectItem>
-                  <SelectItem key="180" value="180">
-                    3 minutes
-                  </SelectItem>
-                </Select>
+                    classNames={SETTINGS_SELECT_CLASSNAMES}
+                  >
+                    <SelectItem key="30" value="30">
+                      30 seconds
+                    </SelectItem>
+                    <SelectItem key="45" value="45">
+                      45 seconds
+                    </SelectItem>
+                    <SelectItem key="60" value="60">
+                      60 seconds
+                    </SelectItem>
+                    <SelectItem key="90" value="90">
+                      90 seconds
+                    </SelectItem>
+                    <SelectItem key="120" value="120">
+                      2 minutes
+                    </SelectItem>
+                    <SelectItem key="180" value="180">
+                      3 minutes
+                    </SelectItem>
+                  </Select>
+                </SettingsField>
               </div>
             </SettingsSection>
           </div>
