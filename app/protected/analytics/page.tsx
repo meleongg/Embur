@@ -31,6 +31,7 @@ import {
   Trophy,
   Weight,
 } from "lucide-react";
+import { EMBUR_INPUT_SURFACE } from "@/lib/nextui-classnames";
 import { queryKeys } from "@/lib/query-keys";
 import {
   fetchAnalyticsSummary,
@@ -366,7 +367,7 @@ export default function AnalyticsPage() {
                       aria-haspopup="listbox"
                       aria-autocomplete="list"
                       classNames={{
-                        inputWrapper: "h-12",
+                        inputWrapper: `h-12 ${EMBUR_INPUT_SURFACE}`,
                       }}
                       onFocus={() => setIsExerciseDropdownOpen(true)}
                       onBlur={() => {
@@ -762,7 +763,7 @@ export default function AnalyticsPage() {
                 size="lg"
                 aria-label="Search exercises in records" // Add this
                 classNames={{
-                  inputWrapper: "h-12",
+                  inputWrapper: `h-12 ${EMBUR_INPUT_SURFACE}`,
                 }}
               />
 

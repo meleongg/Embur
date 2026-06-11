@@ -42,6 +42,7 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  ChevronLeft,
   ChevronUp,
   Clock,
   Dumbbell,
@@ -59,6 +60,8 @@ import {
   upsertAnalyticsBests,
   upsertAnalyticsFromSessionExercises,
 } from "@/lib/analytics-upsert";
+import { sessionSetInputClassNames } from "@/lib/nextui-classnames";
+import { cn } from "@/lib/utils";
 
 // Fetch workout data
 const getWorkoutData = async (supabase: any, workoutId: string) => {
@@ -240,6 +243,10 @@ export default function WorkoutSession() {
     setIndex: number;
   } | null>(null);
   const [completingWorkout, setCompletingWorkout] = useState(false);
+  const [reorderFlash, setReorderFlash] = useState<{
+    id: string;
+    direction: "up" | "down";
+  } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Add to your component
@@ -989,7 +996,29 @@ export default function WorkoutSession() {
     onOpen();
   };
 
-  // Add this function to your component
+  const triggerReorderFlash = (id: string, direction: "up" | "down") => {
+    setReorderFlash({ id, direction });
+    window.setTimeout(() => setReorderFlash(null), 500);
+  };
+
+  const moveExercise = (exerciseIndex: number, direction: "up" | "down") => {
+    const exercise = sessionExercises[exerciseIndex];
+    const targetIndex =
+      direction === "up" ? exerciseIndex - 1 : exerciseIndex + 1;
+    if (targetIndex < 0 || targetIndex >= sessionExercises.length) return;
+
+    setSessionExercises((prev) => {
+      const next = [...prev];
+      [next[exerciseIndex], next[targetIndex]] = [
+        next[targetIndex],
+        next[exerciseIndex],
+      ];
+      return next;
+    });
+    triggerReorderFlash(exercise.id, direction);
+    toastDebug(`${exercise.name} moved ${direction}`);
+  };
+
   const handleSetCompletion = (exerciseIndex: number, setIndex: number) => {
     const newExercises = [...sessionExercises];
     const currentSet = newExercises[exerciseIndex].actualSets[setIndex];
@@ -1346,7 +1375,15 @@ export default function WorkoutSession() {
             sessionExercises.map((exercise, exerciseIndex) => (
               <div
                 key={exercise.id}
-                className="bg-default-50 dark:bg-default-100 p-4 rounded-lg shadow-sm border border-default-200 transition-all duration-300 hover:shadow-md"
+                className={cn(
+                  "bg-default-50 dark:bg-content1 p-4 rounded-lg shadow-sm border border-default-200 transition-all duration-300 hover:shadow-md",
+                  reorderFlash?.id === exercise.id &&
+                    reorderFlash.direction === "up" &&
+                    "animate-reorder-up ring-2 ring-primary/50 shadow-lg",
+                  reorderFlash?.id === exercise.id &&
+                    reorderFlash.direction === "down" &&
+                    "animate-reorder-down ring-2 ring-primary/50 shadow-lg"
+                )}
               >
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                   <div className="flex items-center gap-2">
@@ -1355,56 +1392,22 @@ export default function WorkoutSession() {
                       <Button
                         size="sm"
                         isIconOnly
-                        variant="light"
+                        variant="bordered"
+                        className="border-default-300"
                         isDisabled={exerciseIndex === 0}
-                        onPress={() => {
-                          setSessionExercises((prev) => {
-                            const newExercises = [...prev];
-                            if (exerciseIndex > 0) {
-                              // Swap with previous exercise
-                              [
-                                newExercises[exerciseIndex],
-                                newExercises[exerciseIndex - 1],
-                              ] = [
-                                newExercises[exerciseIndex - 1],
-                                newExercises[exerciseIndex],
-                              ];
-                            }
-                            return newExercises;
-                          });
-                          if (exerciseIndex > 0) {
-                            toastDebug(`${exercise.name} moved up`);
-                          }
-                        }}
+                        onPress={() => moveExercise(exerciseIndex, "up")}
                       >
                         <ArrowUp className="h-4 w-4" />
                       </Button>
                       <Button
                         size="sm"
                         isIconOnly
-                        variant="light"
+                        variant="bordered"
+                        className="border-default-300"
                         isDisabled={
                           exerciseIndex === sessionExercises.length - 1
                         }
-                        onPress={() => {
-                          setSessionExercises((prev) => {
-                            const newExercises = [...prev];
-                            if (exerciseIndex < newExercises.length - 1) {
-                              // Swap with next exercise
-                              [
-                                newExercises[exerciseIndex],
-                                newExercises[exerciseIndex + 1],
-                              ] = [
-                                newExercises[exerciseIndex + 1],
-                                newExercises[exerciseIndex],
-                              ];
-                            }
-                            return newExercises;
-                          });
-                          if (exerciseIndex < sessionExercises.length - 1) {
-                            toastDebug(`${exercise.name} moved down`);
-                          }
-                        }}
+                        onPress={() => moveExercise(exerciseIndex, "down")}
                       >
                         <ArrowDown className="h-4 w-4" />
                       </Button>
@@ -1448,7 +1451,8 @@ export default function WorkoutSession() {
                     <Button
                       color="danger"
                       size="sm"
-                      variant="light"
+                      variant="bordered"
+                      className="border-danger/60 bg-danger/10 font-medium shrink-0"
                       startContent={<Trash2 className="h-4 w-4" />}
                       isLoading={removingExercise === exercise.id}
                       onPress={() => {
@@ -1468,275 +1472,250 @@ export default function WorkoutSession() {
                   </div>
                 </div>
 
-                <div className="w-full overflow-x-auto -mx-2 px-2">
-                  <Table
-                    aria-label={`${exercise.name} sets`}
-                    classNames={{
-                      base: "min-w-full",
-                      table: "min-w-full",
-                    }}
-                  >
-                    <TableHeader className="sticky top-0 z-10 bg-card">
-                      <TableColumn className="w-[80px] min-w-[80px]">
-                        SET
-                      </TableColumn>
-                      <TableColumn className="w-[120px] min-w-[120px]">
-                        REPS
-                      </TableColumn>
-                      <TableColumn className="w-[140px] min-w-[140px]">
-                        WEIGHT ({useMetric ? "KG" : "LBS"})
-                      </TableColumn>
-                      <TableColumn className="w-[130px] min-w-[130px]">
-                        STATUS
-                      </TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {exercise.actualSets.map((set, setIndex) => (
-                        <TableRow key={setIndex}>
-                          <TableCell className="text-center">
-                            {set.setNumber}
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <Input
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              value={set.reps === null ? "" : String(set.reps)}
-                              size="md"
-                              classNames={{
-                                base: "min-w-[80px] w-[80px] transition-all duration-200",
-                                input: "text-center px-0",
-                                innerWrapper: "h-9",
-                              }}
-                              onChange={(e) => {
-                                const inputValue = e.target.value;
+                <div className="w-full space-y-2">
+                  <div className="hidden sm:grid sm:grid-cols-[2.5rem_1fr_1fr_auto] gap-2 px-1 text-xs font-medium uppercase tracking-wide text-default-500">
+                    <span className="text-center">Set</span>
+                    <span className="text-center">Reps</span>
+                    <span className="text-center">
+                      Weight ({useMetric ? "kg" : "lbs"})
+                    </span>
+                    <span className="text-center min-w-[8.5rem]">Status</span>
+                  </div>
 
-                                if (inputValue === "") {
-                                  const newExercises = [...sessionExercises];
-                                  newExercises[exerciseIndex].actualSets[
-                                    setIndex
-                                  ].reps = null;
-                                  setSessionExercises(newExercises);
-                                  return;
-                                }
+                  {exercise.actualSets.map((set, setIndex) => (
+                    <div
+                      key={setIndex}
+                      className={cn(
+                        "rounded-xl border p-3 transition-all duration-300",
+                        set.completed
+                          ? "bg-success/15 border-success/45 dark:bg-success/20 dark:border-success/40"
+                          : "border-default-200 bg-content1/40 dark:bg-content2/30"
+                      )}
+                    >
+                      <div className="grid grid-cols-2 sm:grid-cols-[2.5rem_1fr_1fr_auto] gap-x-2 gap-y-3 sm:gap-2 sm:items-center">
+                        <span className="hidden sm:flex items-center justify-center text-sm font-semibold">
+                          {set.setNumber}
+                        </span>
 
-                                if (!/^\d+$/.test(inputValue)) {
-                                  return;
-                                }
+                        <div className="col-span-2 flex items-center justify-between sm:hidden">
+                          <span className="text-sm font-semibold">
+                            Set {set.setNumber}
+                          </span>
+                          {set.completed && (
+                            <Chip size="sm" color="success" variant="flat">
+                              Done
+                            </Chip>
+                          )}
+                        </div>
 
-                                const newValue = parseInt(inputValue);
+                        <div className="flex flex-col gap-1">
+                          <span className="sm:hidden text-xs text-default-500">
+                            Reps
+                          </span>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={set.reps === null ? "" : String(set.reps)}
+                            size="md"
+                            variant="bordered"
+                            aria-label={`Set ${set.setNumber} reps`}
+                            classNames={sessionSetInputClassNames(
+                              set.completed
+                            )}
+                            onChange={(e) => {
+                              const inputValue = e.target.value;
+
+                              if (inputValue === "") {
                                 const newExercises = [...sessionExercises];
                                 newExercises[exerciseIndex].actualSets[
                                   setIndex
-                                ].reps = newValue;
+                                ].reps = null;
                                 setSessionExercises(newExercises);
-                              }}
-                              onBlur={(e) => {
-                                const newValue = parseInt(e.target.value) || 0;
-                                const newExercises = [...sessionExercises];
-                                newExercises[exerciseIndex].actualSets[
-                                  setIndex
-                                ].reps = newValue;
-                                setSessionExercises(newExercises);
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              pattern="[0-9]*\.?[0-9]*"
-                              // Show editing value while actively editing, otherwise show converted display value
-                              value={
-                                // If we're currently editing this specific input
-                                `${exerciseIndex}-${setIndex}` in editingWeights
-                                  ? editingWeights[
-                                      `${exerciseIndex}-${setIndex}`
-                                    ]
-                                  : // Otherwise show the proper converted value based on user preference
-                                    set.weight === null
-                                    ? ""
-                                    : useMetric
-                                      ? Number(set.weight).toFixed(1)
-                                      : kgToLbs(set.weight).toFixed(1)
+                                return;
                               }
-                              size="md"
-                              classNames={{
-                                base: "min-w-[90px] w-[90px] transition-all duration-200",
-                                input: "text-center px-0",
-                                innerWrapper: "h-9",
-                                inputWrapper: set.completed
-                                  ? "bg-success/10 border-success"
-                                  : "",
-                              }}
-                              onFocus={(e) => {
-                                // When focusing, initialize editing state with current display value
-                                const displayValue =
-                                  set.weight === null
-                                    ? ""
-                                    : useMetric
-                                      ? Number(set.weight).toFixed(1)
-                                      : kgToLbs(set.weight).toFixed(1);
 
+                              if (!/^\d+$/.test(inputValue)) {
+                                return;
+                              }
+
+                              const newValue = parseInt(inputValue);
+                              const newExercises = [...sessionExercises];
+                              newExercises[exerciseIndex].actualSets[
+                                setIndex
+                              ].reps = newValue;
+                              setSessionExercises(newExercises);
+                            }}
+                            onBlur={(e) => {
+                              const newValue = parseInt(e.target.value) || 0;
+                              const newExercises = [...sessionExercises];
+                              newExercises[exerciseIndex].actualSets[
+                                setIndex
+                              ].reps = newValue;
+                              setSessionExercises(newExercises);
+                            }}
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <span className="sm:hidden text-xs text-default-500">
+                            Weight ({useMetric ? "kg" : "lbs"})
+                          </span>
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
+                            value={
+                              `${exerciseIndex}-${setIndex}` in editingWeights
+                                ? editingWeights[`${exerciseIndex}-${setIndex}`]
+                                : set.weight === null
+                                  ? ""
+                                  : useMetric
+                                    ? Number(set.weight).toFixed(1)
+                                    : kgToLbs(set.weight).toFixed(1)
+                            }
+                            size="md"
+                            variant="bordered"
+                            aria-label={`Set ${set.setNumber} weight`}
+                            classNames={sessionSetInputClassNames(
+                              set.completed
+                            )}
+                            onFocus={() => {
+                              const displayValue =
+                                set.weight === null
+                                  ? ""
+                                  : useMetric
+                                    ? Number(set.weight).toFixed(1)
+                                    : kgToLbs(set.weight).toFixed(1);
+
+                              setEditingWeights({
+                                ...editingWeights,
+                                [`${exerciseIndex}-${setIndex}`]: displayValue,
+                              });
+                            }}
+                            onChange={(e) => {
+                              const inputValue = e.target.value;
+
+                              if (inputValue === "") {
                                 setEditingWeights({
                                   ...editingWeights,
-                                  [`${exerciseIndex}-${setIndex}`]:
-                                    displayValue,
+                                  [`${exerciseIndex}-${setIndex}`]: "",
                                 });
-                              }}
-                              onChange={(e) => {
-                                const inputValue = e.target.value;
+                                return;
+                              }
 
-                                // Allow empty input
-                                if (inputValue === "") {
-                                  setEditingWeights({
-                                    ...editingWeights,
-                                    [`${exerciseIndex}-${setIndex}`]: "",
-                                  });
-                                  return;
-                                }
+                              if (/^\d*\.?\d*$/.test(inputValue)) {
+                                setEditingWeights({
+                                  ...editingWeights,
+                                  [`${exerciseIndex}-${setIndex}`]: inputValue,
+                                });
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const inputValue = e.target.value;
 
-                                // Allow any input that could be a valid decimal number
-                                if (/^\d*\.?\d*$/.test(inputValue)) {
-                                  // Store exactly what the user types during editing
-                                  setEditingWeights({
-                                    ...editingWeights,
-                                    [`${exerciseIndex}-${setIndex}`]:
-                                      inputValue,
-                                  });
-                                }
-                              }}
-                              onBlur={(e) => {
-                                const inputValue = e.target.value;
-
-                                // Handle special case of just a decimal point
-                                if (inputValue === "." || inputValue === "") {
-                                  const newExercises = [...sessionExercises];
-                                  newExercises[exerciseIndex].actualSets[
-                                    setIndex
-                                  ].weight = 0;
-                                  setSessionExercises(newExercises);
-
-                                  // Clear editing state
-                                  const newEditingWeights = {
-                                    ...editingWeights,
-                                  };
-                                  delete newEditingWeights[
-                                    `${exerciseIndex}-${setIndex}`
-                                  ];
-                                  setEditingWeights(newEditingWeights);
-                                  return;
-                                }
-
-                                // Parse value and convert to kg for storage if needed
-                                const numValue = parseFloat(inputValue) || 0;
-                                const storageValue = useMetric
-                                  ? numValue
-                                  : lbsToKg(numValue);
-
-                                // Update the actual exercise data
+                              if (inputValue === "." || inputValue === "") {
                                 const newExercises = [...sessionExercises];
                                 newExercises[exerciseIndex].actualSets[
                                   setIndex
-                                ].weight = storageValue;
+                                ].weight = 0;
                                 setSessionExercises(newExercises);
 
-                                // Clear editing state
-                                const newEditingWeights = { ...editingWeights };
+                                const newEditingWeights = {
+                                  ...editingWeights,
+                                };
                                 delete newEditingWeights[
                                   `${exerciseIndex}-${setIndex}`
                                 ];
                                 setEditingWeights(newEditingWeights);
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell className="p-2 flex gap-1">
-                            <Button
-                              color={set.completed ? "success" : "primary"}
-                              size="sm"
-                              className={`flex-1 min-w-[80px] transition-all duration-300 ${
-                                set.completed
-                                  ? "ring-2 ring-success ring-opacity-50"
-                                  : ""
-                              }`}
-                              onPress={() =>
-                                handleSetCompletion(exerciseIndex, setIndex)
+                                return;
                               }
-                            >
-                              {set.completed ? "Completed" : "Mark Complete"}
-                            </Button>
 
-                            {/* Add this remove button */}
-                            <Button
-                              isIconOnly
-                              color="danger"
-                              variant="light"
-                              size="sm"
-                              isLoading={
-                                removingSet?.exerciseId === exercise.id &&
-                                removingSet?.setIndex === setIndex
+                              const numValue = parseFloat(inputValue) || 0;
+                              const storageValue = useMetric
+                                ? numValue
+                                : lbsToKg(numValue);
+
+                              const newExercises = [...sessionExercises];
+                              newExercises[exerciseIndex].actualSets[
+                                setIndex
+                              ].weight = storageValue;
+                              setSessionExercises(newExercises);
+
+                              const newEditingWeights = { ...editingWeights };
+                              delete newEditingWeights[
+                                `${exerciseIndex}-${setIndex}`
+                              ];
+                              setEditingWeights(newEditingWeights);
+                            }}
+                          />
+                        </div>
+
+                        <div className="col-span-2 sm:col-span-1 flex gap-2 sm:justify-end">
+                          <Button
+                            color={set.completed ? "success" : "primary"}
+                            size="sm"
+                            className="h-9 min-w-[7.25rem] flex-1 sm:flex-none font-medium"
+                            onPress={() =>
+                              handleSetCompletion(exerciseIndex, setIndex)
+                            }
+                          >
+                            {set.completed ? "Undo" : "Complete"}
+                          </Button>
+
+                          <Button
+                            isIconOnly
+                            color="danger"
+                            variant="bordered"
+                            size="sm"
+                            className="h-9 w-9 min-w-9 border-danger/50 shrink-0"
+                            isLoading={
+                              removingSet?.exerciseId === exercise.id &&
+                              removingSet?.setIndex === setIndex
+                            }
+                            onPress={() => {
+                              if (exercise.actualSets.length <= 1) {
+                                toast.error("Cannot remove the only set");
+                                return;
                               }
-                              onPress={() => {
-                                // Don't allow removing if it's the only set
-                                if (exercise.actualSets.length <= 1) {
-                                  toast.error("Cannot remove the only set");
-                                  return;
-                                }
 
-                                setRemovingSet({
-                                  exerciseId: exercise.id,
+                              setRemovingSet({
+                                exerciseId: exercise.id,
+                                setIndex,
+                              });
+
+                              setTimeout(() => {
+                                const newExercises = [...sessionExercises];
+                                newExercises[exerciseIndex].actualSets.splice(
                                   setIndex,
-                                });
-
-                                setTimeout(() => {
-                                  // Create new exercises array
-                                  const newExercises = [...sessionExercises];
-
-                                  // Remove the set at the specified index
-                                  newExercises[exerciseIndex].actualSets.splice(
-                                    setIndex,
-                                    1
+                                  1
+                                );
+                                newExercises[exerciseIndex].actualSets =
+                                  newExercises[exerciseIndex].actualSets.map(
+                                    (s, idx) => ({
+                                      ...s,
+                                      setNumber: idx + 1,
+                                    })
                                   );
-
-                                  // Renumber the remaining sets
-                                  newExercises[exerciseIndex].actualSets =
-                                    newExercises[exerciseIndex].actualSets.map(
-                                      (set, idx) => ({
-                                        ...set,
-                                        setNumber: idx + 1,
-                                      })
-                                    );
-
-                                  // Update state
-                                  setSessionExercises(newExercises);
-
-                                  // Show confirmation toast
-                                  toastDebug(
-                                    `Set removed from ${exercise.name}`
-                                  );
-
-                                  setRemovingSet(null);
-                                }, 300);
-                              }}
-                              className={
-                                exercise.actualSets.length <= 1
-                                  ? "opacity-50"
-                                  : ""
-                              }
-                              isDisabled={exercise.actualSets.length <= 1}
-                            >
-                              {removingSet?.exerciseId === exercise.id &&
-                              removingSet?.setIndex === setIndex ? (
-                                <Spinner size="sm" color="danger" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                                setSessionExercises(newExercises);
+                                toastDebug(`Set removed from ${exercise.name}`);
+                                setRemovingSet(null);
+                              }, 300);
+                            }}
+                            isDisabled={exercise.actualSets.length <= 1}
+                            aria-label={`Remove set ${set.setNumber}`}
+                          >
+                            {removingSet?.exerciseId === exercise.id &&
+                            removingSet?.setIndex === setIndex ? (
+                              <Spinner size="sm" color="danger" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="mt-4">
@@ -2089,7 +2068,7 @@ export default function WorkoutSession() {
                                     classNames={{
                                       input: "text-center font-medium pr-0",
                                       inputWrapper:
-                                        "bg-card hover:border-primary focus-within:border-primary min-h-unit-10",
+                                        "bg-content1 dark:bg-content2 hover:border-primary focus-within:border-primary min-h-unit-10 border border-default-200",
                                       innerWrapper: "gap-0",
                                     }}
                                     value={update.sets.toString()}
@@ -2125,7 +2104,7 @@ export default function WorkoutSession() {
                                     classNames={{
                                       input: "text-center font-medium pr-0",
                                       inputWrapper:
-                                        "bg-card hover:border-primary focus-within:border-primary min-h-unit-10",
+                                        "bg-content1 dark:bg-content2 hover:border-primary focus-within:border-primary min-h-unit-10 border border-default-200",
                                       innerWrapper: "gap-0",
                                     }}
                                     value={update.reps.toString()}
@@ -2161,7 +2140,7 @@ export default function WorkoutSession() {
                                     classNames={{
                                       input: "text-center font-medium pr-0",
                                       inputWrapper:
-                                        "bg-card hover:border-primary focus-within:border-primary min-h-unit-10",
+                                        "bg-content1 dark:bg-content2 hover:border-primary focus-within:border-primary min-h-unit-10 border border-default-200",
                                       innerWrapper: "gap-0",
                                     }}
                                     value={convertFromStorageUnit(
@@ -2243,15 +2222,15 @@ export default function WorkoutSession() {
               <ModalFooter>
                 <Button
                   variant="light"
+                  startContent={<ChevronLeft className="h-4 w-4" />}
                   onPress={() => {
-                    // Go back to workout session without submitting
                     setShowUpdateWorkoutModal(false);
                     setCompletingWorkout(false);
                     setIsSubmitting(false);
                     toastDebug("Returned to workout session");
                   }}
                 >
-                  ← Go Back
+                  Go back
                 </Button>
                 <Button
                   variant="flat"

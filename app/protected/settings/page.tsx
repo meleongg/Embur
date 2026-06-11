@@ -51,7 +51,8 @@ const DEFAULT_PREFERENCES = {
 const SETTINGS_INPUT_CLASSNAMES = {
   label: "text-sm font-medium text-foreground pb-1",
   input: "text-base",
-  inputWrapper: "h-12 min-h-[3rem] px-3 py-2 shadow-sm",
+  inputWrapper:
+    "h-12 min-h-[3rem] px-3 py-2 shadow-sm bg-content1 dark:bg-content2 border border-default-200",
   innerWrapper: "gap-1.5",
 };
 
