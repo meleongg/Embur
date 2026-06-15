@@ -29,6 +29,7 @@ import {
 } from "@nextui-org/react";
 import {
   Calendar,
+  ChevronRight,
   Clock,
   Dumbbell,
   Edit,
@@ -191,7 +192,6 @@ export default function ViewWorkout() {
             as={Link}
             href={`/protected/workouts/${workoutId}/edit`}
             startContent={<Edit className="h-4 w-4" />}
-            className="dark:text-white"
           >
             Edit
           </Button>
@@ -199,7 +199,6 @@ export default function ViewWorkout() {
             color="success"
             onPress={startWorkout}
             startContent={<Play className="h-4 w-4" />}
-            className="dark:text-white"
           >
             Start Workout
           </Button>
@@ -407,16 +406,19 @@ export default function ViewWorkout() {
           }
           disabled={workoutHistory.length === 0}
         >
-          <div className="mt-4">
+          <div className="mt-4 min-w-0 overflow-x-auto">
             {workoutHistory.length > 0 ? (
-              <Table aria-label="Workout history">
+              <Table
+                aria-label="Workout history"
+                classNames={{ wrapper: "min-w-0" }}
+              >
                 <TableHeader>
                   <TableColumn>DATE</TableColumn>
                   <TableColumn>DURATION</TableColumn>
+                  <TableColumn className="w-12 text-right"> </TableColumn>
                 </TableHeader>
                 <TableBody>
                   {workoutHistory.map((session) => {
-                    // Calculate duration from timestamps
                     const startTime = new Date(session.started_at).getTime();
                     const endTime = new Date(session.ended_at).getTime();
                     const durationSeconds = Math.floor(
@@ -426,12 +428,27 @@ export default function ViewWorkout() {
                     const seconds = durationSeconds % 60;
 
                     return (
-                      <TableRow key={session.id}>
+                      <TableRow
+                        key={session.id}
+                        as={Link}
+                        href={`/protected/sessions/${session.id}`}
+                        className="cursor-pointer hover:bg-default-100 dark:hover:bg-default-100/10"
+                      >
                         <TableCell>
-                          {new Date(session.ended_at).toLocaleDateString()}
+                          {new Date(session.ended_at).toLocaleDateString(
+                            undefined,
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
                         </TableCell>
                         <TableCell>
                           {minutes} min {seconds} sec
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <ChevronRight className="inline h-4 w-4 text-default-400" />
                         </TableCell>
                       </TableRow>
                     );

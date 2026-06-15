@@ -111,6 +111,8 @@ interface SessionExercise {
   targetSets: number;
   targetReps: number;
   targetWeight: number;
+  /** False for exercises added mid-session (library/custom) with default scaffolding */
+  showWorkoutTarget?: boolean;
   actualSets: {
     setNumber: number;
     reps: number | null;
@@ -443,6 +445,7 @@ export default function WorkoutSession() {
       targetSets: exercise.sets,
       targetReps: exercise.reps,
       targetWeight: exercise.weight,
+      showWorkoutTarget: true,
       actualSets: Array.from({ length: exercise.sets }, (_, i) => ({
         setNumber: i + 1,
         reps: 0,
@@ -541,6 +544,7 @@ export default function WorkoutSession() {
         targetSets: 3,
         targetReps: 10,
         targetWeight: 0,
+        showWorkoutTarget: false,
         actualSets: Array.from({ length: 3 }, (_, i) => ({
           setNumber: i + 1,
           reps: 0,
@@ -1444,10 +1448,14 @@ export default function WorkoutSession() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                    <div className="text-sm text-muted-foreground">
-                      Target: {exercise.targetSets} sets × {exercise.targetReps}{" "}
-                      reps @ {displayWeight(exercise.targetWeight, useMetric)}
-                    </div>
+                    {(exercise.showWorkoutTarget ??
+                      workoutExercises.some((w) => w.id === exercise.id)) && (
+                      <div className="text-sm text-muted-foreground">
+                        Target: {exercise.targetSets} sets ×{" "}
+                        {exercise.targetReps} reps @{" "}
+                        {displayWeight(exercise.targetWeight, useMetric)}
+                      </div>
+                    )}
                     <Button
                       color="danger"
                       size="sm"
@@ -2358,14 +2366,20 @@ export default function WorkoutSession() {
                             onPress={() => {
                               setAddingExercise(exercise.id);
 
+                              const fromWorkout = workoutExercises.find(
+                                (we) => we.id === exercise.id
+                              );
+                              const setCount = fromWorkout?.sets ?? 3;
+
                               const newExercise = {
                                 id: exercise.id,
                                 name: exercise.name,
-                                targetSets: 3,
-                                targetReps: 10,
-                                targetWeight: 0,
+                                targetSets: fromWorkout?.sets ?? 3,
+                                targetReps: fromWorkout?.reps ?? 10,
+                                targetWeight: fromWorkout?.weight ?? 0,
+                                showWorkoutTarget: !!fromWorkout,
                                 actualSets: Array.from(
-                                  { length: 3 },
+                                  { length: setCount },
                                   (_, i) => ({
                                     setNumber: i + 1,
                                     reps: 0,

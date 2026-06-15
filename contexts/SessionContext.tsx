@@ -21,6 +21,7 @@ interface SessionExercise {
   targetSets: number;
   targetReps: number;
   targetWeight: number;
+  showWorkoutTarget?: boolean;
   actualSets: {
     setNumber: number;
     reps: number | null;

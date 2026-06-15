@@ -25,7 +25,9 @@ import { fetchSessionsList } from "@/lib/queries/sessions";
 import { toast } from "@/lib/toast";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+const EMPTY_SESSIONS: never[] = [];
 
 // Helper functions for stats calculations
 const calculateWorkoutsThisWeek = (sessions: any[]) => {
@@ -81,7 +83,7 @@ const getMonthName = (date: Date) => {
 
 export default function SessionsPage() {
   const {
-    data: sessions = [],
+    data,
     isLoading,
     isError,
     error: queryError,
@@ -89,13 +91,37 @@ export default function SessionsPage() {
     queryKey: queryKeys.sessions.list(),
     queryFn: fetchSessionsList,
   });
+  const sessions = data ?? EMPTY_SESSIONS;
+
   const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [months, setMonths] = useState<string[]>([]);
-  const [filteredSessions, setFilteredSessions] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [sessionsPerPage] = useState(10);
 
   const { useMetric, isLoading: loadingPreferences } = useUnitPreference();
+
+  const months = useMemo(() => {
+    if (!sessions.length) return [];
+    const allMonths = sessions.map((s) => getMonthName(new Date(s.started_at)));
+    return Array.from(new Set(allMonths));
+  }, [sessions]);
+
+  useEffect(() => {
+    if (months.length === 0) {
+      if (selectedMonth) setSelectedMonth("");
+      return;
+    }
+    if (!selectedMonth || !months.includes(selectedMonth)) {
+      setSelectedMonth(months[0]);
+    }
+  }, [months, selectedMonth]);
+
+  const filteredSessions = useMemo(() => {
+    if (!selectedMonth || !sessions.length) return sessions;
+    return sessions.filter((session) => {
+      const sessionMonth = getMonthName(new Date(session.started_at));
+      return sessionMonth === selectedMonth;
+    });
+  }, [sessions, selectedMonth]);
 
   useEffect(() => {
     if (isError) {
@@ -113,86 +139,35 @@ export default function SessionsPage() {
       : "Could not load your workout history"
     : null;
 
-  useEffect(() => {
-    if (!sessions.length) {
-      setMonths([]);
-      return;
-    }
+  const sessionsByDate = useMemo(() => {
+    return filteredSessions.reduce((groups: Record<string, any[]>, session) => {
+      const date = new Date(session.started_at).toDateString();
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(session);
+      return groups;
+    }, {});
+  }, [filteredSessions]);
 
-    const allMonths = sessions.map((s) => getMonthName(new Date(s.started_at)));
-    const uniqueMonths = Array.from(new Set(allMonths));
-    setMonths(uniqueMonths);
-
-    if (uniqueMonths.length > 0 && !selectedMonth) {
-      setSelectedMonth(uniqueMonths[0]);
-    }
-  }, [sessions]);
-
-  // Filter sessions when selectedMonth changes with toast notification
-  useEffect(() => {
-    if (selectedMonth && sessions.length) {
-      const filtered = sessions.filter((session) => {
-        const sessionMonth = getMonthName(new Date(session.started_at));
-        return sessionMonth === selectedMonth;
-      });
-      setFilteredSessions(filtered);
-    } else {
-      setFilteredSessions(sessions);
-    }
-    // Reset to first page whenever filter changes
-    setCurrentPage(1);
-  }, [selectedMonth, sessions]);
-
-  // Calculate paginated sessions - add this before grouping
-  const paginateSessionsByDate = () => {
-    // First group all filtered sessions by date
-    const groupedByDate = filteredSessions.reduce(
-      (groups: any, session: any) => {
-        const date = new Date(session.started_at).toDateString();
-        if (!groups[date]) {
-          groups[date] = [];
-        }
-        groups[date].push(session);
-        return groups;
-      },
-      {}
-    );
-
-    // Convert to array of [date, sessions] pairs for easier pagination
-    const dateSessionPairs = Object.entries(groupedByDate);
-
-    // Calculate pagination indexes
+  const paginatedSessionsByDate = useMemo(() => {
+    const dateSessionPairs = Object.entries(sessionsByDate);
     const indexOfLastItem = currentPage * sessionsPerPage;
     const indexOfFirstItem = indexOfLastItem - sessionsPerPage;
-
-    // Slice the array for current page
     const currentItems = dateSessionPairs.slice(
       indexOfFirstItem,
       indexOfLastItem
     );
+    return currentItems.reduce<Record<string, any[]>>(
+      (acc, [date, dateSessions]) => {
+        acc[date] = dateSessions;
+        return acc;
+      },
+      {}
+    );
+  }, [sessionsByDate, currentPage, sessionsPerPage]);
 
-    // Convert back to object
-    return currentItems.reduce((acc: any, [date, sessions]) => {
-      acc[date] = sessions;
-      return acc;
-    }, {});
-  };
-
-  // Use this function instead of directly using sessionsByDate
-  const paginatedSessionsByDate = isLoading ? {} : paginateSessionsByDate();
-
-  // Calculate total pages
-  const totalPages = Math.ceil(
-    Object.keys(
-      filteredSessions.reduce((groups: any, session: any) => {
-        const date = new Date(session.started_at).toDateString();
-        if (!groups[date]) {
-          groups[date] = [];
-        }
-        groups[date].push(session);
-        return groups;
-      }, {})
-    ).length / sessionsPerPage
+  const totalPages = Math.max(
+    1,
+    Math.ceil(Object.keys(sessionsByDate).length / sessionsPerPage)
   );
 
   const displayTotalWeight = (totalKg: number): number | string => {
@@ -217,17 +192,17 @@ export default function SessionsPage() {
   }
 
   return (
-    <div className="flex flex-col pb-16">
+    <div className="flex min-w-0 w-full max-w-full flex-col overflow-x-hidden pb-16">
       <PageTitle title="Workout History" />
 
-      <div className="mt-4 mb-8 grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-4">
+      <div className="mt-4 mb-8 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-4">
         {isLoading ? (
           Array(4)
             .fill(0)
             .map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
-            <Card className="bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
+            <Card className="min-w-0 bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
@@ -245,7 +220,7 @@ export default function SessionsPage() {
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-success/20 to-success/5 border border-success/10">
+            <Card className="min-w-0 bg-gradient-to-br from-success/20 to-success/5 border border-success/10">
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
@@ -263,7 +238,7 @@ export default function SessionsPage() {
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-muted to-secondary border border-border">
+            <Card className="min-w-0 bg-gradient-to-br from-muted to-secondary border border-border">
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
@@ -281,7 +256,7 @@ export default function SessionsPage() {
               </CardBody>
             </Card>
 
-            <Card className="bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/10">
+            <Card className="min-w-0 bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/10">
               <CardBody className="p-3">
                 <div className="flex items-start justify-between">
                   <div>
@@ -305,17 +280,17 @@ export default function SessionsPage() {
         )}
       </div>
 
-      {/* Month Filter */}
-      <div className="relative mb-6">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-border">
+      {/* Month filter — wrap on desktop, scroll only if needed on small screens */}
+      <div className="mb-6 min-w-0">
+        <div className="flex flex-wrap gap-2 sm:gap-2.5">
           {isLoading ? (
-            <div className="flex gap-2">
+            <>
               {Array(4)
                 .fill(0)
                 .map((_, i) => (
-                  <Skeleton key={i} className="h-9 w-28 rounded-lg" />
+                  <Skeleton key={i} className="h-9 w-28 rounded-lg shrink-0" />
                 ))}
-            </div>
+            </>
           ) : (
             months.map((month) => (
               <Button
@@ -324,8 +299,11 @@ export default function SessionsPage() {
                 radius="lg"
                 variant={selectedMonth === month ? "solid" : "flat"}
                 color={selectedMonth === month ? "primary" : "default"}
-                onPress={() => setSelectedMonth(month)}
-                className="min-w-[7rem] px-4"
+                onPress={() => {
+                  setSelectedMonth(month);
+                  setCurrentPage(1);
+                }}
+                className="shrink-0 min-w-[7rem] px-4"
               >
                 {month}
               </Button>
@@ -334,8 +312,8 @@ export default function SessionsPage() {
         </div>
       </div>
 
-      {/* Session Timeline with enhanced cards */}
-      <div className="space-y-8 mb-16">
+      {/* Session timeline */}
+      <div className="min-w-0 space-y-8 mb-16">
         {isLoading ? (
           <>
             {Array(3)

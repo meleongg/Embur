@@ -344,7 +344,7 @@ export default function WorkoutsPage() {
           as={Link}
           href="/protected/workouts/create-workout"
           color="primary"
-          className="dark:text-white w-full sm:w-auto"
+          className="w-full sm:w-auto"
           startContent={<Plus className="h-4 w-4" />}
         >
           Create Workout
@@ -446,7 +446,15 @@ export default function WorkoutsPage() {
                         {workout.category.name}
                       </Chip>
                     )}
-                    <Chip size="sm" variant="flat">
+                    <Chip
+                      size="sm"
+                      variant="bordered"
+                      classNames={{
+                        base: "border-border/70 bg-content2 dark:border-default-400 dark:bg-content3",
+                        content:
+                          "text-default-600 dark:text-default-300 font-medium",
+                      }}
+                    >
                       {workout.workout_exercises.length} exercises
                     </Chip>
                   </div>
