@@ -101,6 +101,12 @@ export default function EditWorkout() {
   const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number>();
+  const [customExerciseName, setCustomExerciseName] = useState("");
+  const [customExerciseDescription, setCustomExerciseDescription] =
+    useState("");
+  const [customExerciseError, setCustomExerciseError] = useState<string | null>(
+    null
+  );
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [submitted, setSubmitted] = useState<any>(null);
@@ -262,22 +268,33 @@ export default function EditWorkout() {
     fetchData();
   }, [workoutId]);
 
-  const handleCustomExerciseSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
-    e.stopPropagation(); // Extra protection
+  const handleOpenCustomModal = () => {
+    setCustomExerciseError(null);
+    setCustomExerciseName("");
+    setCustomExerciseDescription("");
+    setSelectedCategory(undefined);
+    onCustomOpen();
+  };
 
-    const data = Object.fromEntries(
-      new FormData(e.currentTarget as HTMLFormElement)
-    );
-    const { exerciseName, exerciseDescription } = data;
+  const handleCustomExerciseSubmit = async () => {
+    setCustomExerciseError(null);
+
+    const exerciseName = customExerciseName.trim();
+    const exerciseDescription = customExerciseDescription.trim();
+
+    if (!exerciseName) {
+      setCustomExerciseError("Exercise name is required");
+      return;
+    }
+
+    if (!selectedCategory) {
+      toast.error("Please select a category");
+      return;
+    }
 
     try {
-      // Show loading toast
       const toastId = toast.loading("Adding custom exercise...");
 
-      // Get the authenticated user
       const {
         data: { user },
         error: authError,
@@ -295,12 +312,30 @@ export default function EditWorkout() {
         throw new Error("No authenticated user found");
       }
 
-      // Insert the custom exercise into the exercises table
+      const { data: existingExercises, error: searchError } = await supabase
+        .from("exercises")
+        .select("id, name")
+        .ilike("name", exerciseName);
+
+      if (searchError) {
+        toast.dismiss(toastId);
+        toast.error("Failed to check for existing exercises.");
+        console.error("Error checking for existing exercises:", searchError);
+        return;
+      }
+
+      if (existingExercises && existingExercises.length > 0) {
+        toast.dismiss(toastId);
+        toast.error("An exercise with this name already exists");
+        setCustomExerciseError("An exercise with this name already exists");
+        return;
+      }
+
       const { data: insertedExercise, error } = await supabase
         .from("exercises")
         .insert({
           name: exerciseName,
-          category_id: selectedCategory || null,
+          category_id: selectedCategory,
           description: exerciseDescription || null,
           user_id: user.id,
           is_default: false,
@@ -315,7 +350,6 @@ export default function EditWorkout() {
         return;
       }
 
-      // Call handleAddExercise to update the page
       handleAddExercise({
         id: insertedExercise.id,
         name: insertedExercise.name,
@@ -324,7 +358,6 @@ export default function EditWorkout() {
         is_default: insertedExercise.is_default,
       });
 
-      // Show success toast and dismiss loading toast
       toast.dismiss(toastId);
       toast.success(`${insertedExercise.name} added to your exercise library!`);
 
@@ -333,7 +366,7 @@ export default function EditWorkout() {
       });
 
       onCustomClose();
-      fetchExercises(currentPage); // Refresh the exercises list
+      fetchExercises(currentPage);
     } catch (error: any) {
       console.error("Error:", error.message);
       toast.error(`Error: ${error.message || "Failed to add exercise"}`);
@@ -1049,7 +1082,11 @@ export default function EditWorkout() {
               <Button color="primary" onPress={handleOpenModal} type="button">
                 Add Exercise
               </Button>
-              <Button color="secondary" onPress={onCustomOpen} type="button">
+              <Button
+                color="secondary"
+                onPress={handleOpenCustomModal}
+                type="button"
+              >
                 Add Custom Exercise
               </Button>
             </div>
@@ -1234,75 +1271,6 @@ export default function EditWorkout() {
               </ModalContent>
             </Modal>
 
-            {/* Modal for Adding Custom Exercise */}
-            <Modal
-              backdrop="opaque"
-              isOpen={isCustomOpen}
-              onClose={onCustomClose}
-              radius="lg"
-              onOpenChange={onCustomOpenChange}
-              placement="center"
-              classNames={{
-                base: "max-w-[95%] sm:max-w-md mx-auto",
-                wrapper: "items-center justify-center p-2",
-                body: "p-4",
-                footer:
-                  "pt-3 px-6 pb-5 flex flex-row gap-3 justify-end border-t border-default-200",
-              }}
-            >
-              <ModalContent>
-                {(onCustomClose) => (
-                  <>
-                    <ModalHeader className="flex flex-col gap-1">
-                      <h3 className="text-lg font-bold">Add Custom Exercise</h3>
-                    </ModalHeader>
-
-                    <ModalBody>
-                      {/* Note section with improved styling */}
-                      <div className="alert-warning mb-5">
-                        <strong>NOTE:</strong> Creating a custom exercise here
-                        will add it to your Exercise Library.
-                      </div>
-
-                      <form
-                        id="custom-exercise-form"
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleCustomExerciseSubmit(e);
-                        }}
-                        className="flex flex-col gap-5"
-                      >
-                        {/* Form content remains the same */}
-                      </form>
-                    </ModalBody>
-
-                    <ModalFooter>
-                      <Button
-                        color="danger"
-                        variant="flat"
-                        onPress={onCustomClose}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        color="primary"
-                        onPress={() => {
-                          const form = document.getElementById(
-                            "custom-exercise-form"
-                          ) as HTMLFormElement;
-                          if (form) {
-                            form.requestSubmit();
-                          }
-                        }}
-                      >
-                        Add Exercise
-                      </Button>
-                    </ModalFooter>
-                  </>
-                )}
-              </ModalContent>
-            </Modal>
             <div className="flex flex-col sm:flex-row gap-2 mt-6 w-full mb-16">
               <Button
                 className="w-full"
@@ -1325,6 +1293,119 @@ export default function EditWorkout() {
           </div>
         </Form>
       </div>
+
+      {/* Modal for Adding Custom Exercise — outside parent Form, matches Select Exercise pattern */}
+      <ClientOnly>
+        <Modal
+          backdrop="opaque"
+          isOpen={isCustomOpen}
+          onClose={onCustomClose}
+          radius="lg"
+          onOpenChange={onCustomOpenChange}
+          placement="center"
+          classNames={{
+            base: "max-w-[95%] sm:max-w-md mx-auto",
+            wrapper: "items-center justify-center p-2",
+            body: "p-4",
+            footer:
+              "pt-3 px-6 pb-5 flex flex-row gap-3 justify-end border-t border-default-200",
+          }}
+        >
+          <ModalContent className="max-w-md mx-auto">
+            {(onCustomClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold">Add Custom Exercise</h3>
+                </ModalHeader>
+
+                <ModalBody>
+                  <div className="alert-warning mb-4">
+                    <strong>NOTE:</strong> Creating a custom exercise here will
+                    add it to your Exercise Library.
+                  </div>
+
+                  <div className="flex flex-col gap-5">
+                    <Input
+                      isRequired
+                      label="Exercise Name"
+                      placeholder="Enter exercise name"
+                      value={customExerciseName}
+                      onChange={(e) => {
+                        setCustomExerciseName(e.target.value);
+                        if (customExerciseError) setCustomExerciseError(null);
+                      }}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      isInvalid={!!customExerciseError}
+                      errorMessage={customExerciseError ?? undefined}
+                      classNames={{
+                        label: "text-sm font-medium text-default-700 mb-1.5",
+                        inputWrapper:
+                          "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                      }}
+                    />
+
+                    <Select
+                      isRequired
+                      label="Category"
+                      placeholder="Select a category"
+                      selectedKeys={
+                        selectedCategory ? [String(selectedCategory)] : []
+                      }
+                      onChange={(e) =>
+                        setSelectedCategory(Number(e.target.value))
+                      }
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{
+                        label: "text-sm font-medium text-default-700 mb-1.5",
+                        trigger:
+                          "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                        popoverContent: "shadow-lg",
+                      }}
+                    >
+                      {categories.map((category) => (
+                        <SelectItem
+                          key={String(category.id)}
+                          value={category.id}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </Select>
+
+                    <Textarea
+                      label="Description"
+                      placeholder="Describe the exercise (optional)"
+                      value={customExerciseDescription}
+                      onChange={(e) =>
+                        setCustomExerciseDescription(e.target.value)
+                      }
+                      variant="bordered"
+                      labelPlacement="outside"
+                      minRows={3}
+                      classNames={{
+                        label: "text-sm font-medium text-default-700 mb-1.5",
+                        inputWrapper:
+                          "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                      }}
+                    />
+                  </div>
+                </ModalBody>
+
+                <ModalFooter className="pt-5 border-t border-default-200">
+                  <Button color="danger" variant="flat" onPress={onCustomClose}>
+                    Cancel
+                  </Button>
+                  <Button color="primary" onPress={handleCustomExerciseSubmit}>
+                    Add Exercise
+                  </Button>
+                </ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
+      </ClientOnly>
     </>
   );
 }

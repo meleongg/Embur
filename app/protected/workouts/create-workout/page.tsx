@@ -93,6 +93,9 @@ const CreateWorkoutPage = () => {
   const [customExerciseError, setCustomExerciseError] = useState<string | null>(
     null
   );
+  const [customExerciseName, setCustomExerciseName] = useState("");
+  const [customExerciseDescription, setCustomExerciseDescription] =
+    useState("");
 
   const [existingWorkoutNames, setExistingWorkoutNames] = useState<string[]>(
     []
@@ -284,25 +287,25 @@ const CreateWorkoutPage = () => {
   };
 
   // Update the handleCustomExerciseSubmit function to check for duplicates
-  const handleCustomExerciseSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Reset error state
+  const handleCustomExerciseSubmit = async () => {
     setCustomExerciseError(null);
 
-    const data = Object.fromEntries(
-      new FormData(e.currentTarget as HTMLFormElement)
-    );
-    const { exerciseName, exerciseDescription } = data;
+    const exerciseName = customExerciseName.trim();
+    const exerciseDescription = customExerciseDescription.trim();
+
+    if (!exerciseName) {
+      setCustomExerciseError("Exercise name is required");
+      return;
+    }
+
+    if (!selectedCategory) {
+      toast.error("Please select a category");
+      return;
+    }
 
     try {
-      // Show loading toast
       const toastId = toast.loading("Adding custom exercise...");
 
-      // Get the authenticated user
       const {
         data: { user },
         error: authError,
@@ -320,11 +323,10 @@ const CreateWorkoutPage = () => {
         throw new Error("No authenticated user found");
       }
 
-      // Check if any exercise with this name already exists (custom or default)
       const { data: existingExercises, error: searchError } = await supabase
         .from("exercises")
         .select("id, name")
-        .ilike("name", exerciseName as string);
+        .ilike("name", exerciseName);
 
       if (searchError) {
         toast.dismiss(toastId);
@@ -333,7 +335,6 @@ const CreateWorkoutPage = () => {
         return;
       }
 
-      // If we found an exercise with the same name
       if (existingExercises && existingExercises.length > 0) {
         toast.dismiss(toastId);
         toast.error("An exercise with this name already exists");
@@ -341,12 +342,11 @@ const CreateWorkoutPage = () => {
         return;
       }
 
-      // Continue with exercise creation since no duplicate was found
       const { data: insertedExercise, error } = await supabase
         .from("exercises")
         .insert({
           name: exerciseName,
-          category_id: selectedCategory || null,
+          category_id: selectedCategory,
           description: exerciseDescription || null,
           user_id: user.id,
           is_default: false,
@@ -361,7 +361,6 @@ const CreateWorkoutPage = () => {
         return;
       }
 
-      // Success - show toast
       toast.dismiss(toastId);
       toast.success(`${insertedExercise.name} added to your exercise library!`);
 
@@ -369,7 +368,6 @@ const CreateWorkoutPage = () => {
         queryKey: queryKeys.exercises.list(),
       });
 
-      // Add exercise to table and close modal
       handleAddExercise({
         id: insertedExercise.id,
         name: insertedExercise.name,
@@ -378,10 +376,7 @@ const CreateWorkoutPage = () => {
         is_default: insertedExercise.is_default,
       });
 
-      // Close the modal
       onCustomClose();
-
-      // Refresh exercises list in background
       fetchExercises(currentPage);
     } catch (error: any) {
       console.error("Error:", error.message);
@@ -530,11 +525,10 @@ const CreateWorkoutPage = () => {
 
   // Add a function to handle opening the custom exercise modal
   const handleOpenCustomModal = () => {
-    // Reset form state
     setCustomExerciseError(null);
+    setCustomExerciseName("");
+    setCustomExerciseDescription("");
     setSelectedCategory(undefined);
-
-    // Open the modal
     onCustomOpen();
   };
 
@@ -1116,140 +1110,6 @@ const CreateWorkoutPage = () => {
               </ModalContent>
             </Modal>
           </ClientOnly>
-
-          {/* Modal for Adding Custom Exercise */}
-          <ClientOnly>
-            <Modal
-              backdrop="opaque"
-              isOpen={isCustomOpen}
-              onClose={onCustomClose}
-              radius="lg"
-              onOpenChange={onCustomOpenChange}
-              placement="center"
-              classNames={{
-                base: "max-w-[95%] sm:max-w-md mx-auto",
-                wrapper: "items-center justify-center p-2",
-                body: "p-4",
-                footer:
-                  "pt-3 px-6 pb-5 flex flex-row gap-3 justify-end border-t border-default-200",
-              }}
-            >
-              <ModalContent className="max-w-md mx-auto">
-                {(onCustomClose) => (
-                  <>
-                    <ModalHeader className="flex flex-col gap-1">
-                      <h3 className="text-lg font-bold">Add Custom Exercise</h3>
-                    </ModalHeader>
-
-                    <ModalBody>
-                      {/* Note section with improved styling */}
-                      <div className="alert-warning mb-4">
-                        <strong>NOTE:</strong> Creating a custom exercise here
-                        will add it to your Exercise Library.
-                      </div>
-
-                      <form
-                        id="custom-exercise-form"
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleCustomExerciseSubmit(e);
-                        }}
-                        className="flex flex-col gap-5"
-                      >
-                        <Input
-                          isRequired
-                          label="Exercise Name"
-                          name="exerciseName"
-                          placeholder="Enter exercise name"
-                          variant="bordered"
-                          labelPlacement="outside"
-                          isInvalid={!!customExerciseError}
-                          errorMessage={customExerciseError}
-                          onChange={() =>
-                            customExerciseError && setCustomExerciseError(null)
-                          }
-                          classNames={{
-                            label:
-                              "text-sm font-medium text-default-700 mb-1.5",
-                            inputWrapper: "shadow-sm",
-                          }}
-                        />
-
-                        <Select
-                          isRequired
-                          label="Category"
-                          placeholder="Select a category"
-                          selectedKeys={
-                            selectedCategory ? [String(selectedCategory)] : []
-                          }
-                          onChange={(e) =>
-                            setSelectedCategory(Number(e.target.value))
-                          }
-                          name="exerciseCategory"
-                          variant="bordered"
-                          labelPlacement="outside"
-                          classNames={{
-                            label:
-                              "text-sm font-medium text-default-700 mb-1.5",
-                            trigger: "shadow-sm",
-                            popoverContent: "shadow-lg",
-                          }}
-                        >
-                          {categories.map((category) => (
-                            <SelectItem
-                              key={String(category.id)}
-                              value={category.id}
-                            >
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </Select>
-
-                        {/* Replace Input with Textarea for description */}
-                        <Textarea
-                          label="Description"
-                          name="exerciseDescription"
-                          placeholder="Describe the exercise (optional)"
-                          variant="bordered"
-                          labelPlacement="outside"
-                          minRows={3}
-                          classNames={{
-                            label:
-                              "text-sm font-medium text-default-700 mb-1.5",
-                            inputWrapper: "shadow-sm",
-                          }}
-                        />
-                      </form>
-                    </ModalBody>
-
-                    <ModalFooter className="pt-5 border-t border-default-200">
-                      <Button
-                        color="danger"
-                        variant="flat"
-                        onPress={onCustomClose}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        color="primary"
-                        onPress={() => {
-                          const form = document.getElementById(
-                            "custom-exercise-form"
-                          ) as HTMLFormElement;
-                          if (form) {
-                            form.requestSubmit();
-                          }
-                        }}
-                      >
-                        Add Exercise
-                      </Button>
-                    </ModalFooter>
-                  </>
-                )}
-              </ModalContent>
-            </Modal>
-          </ClientOnly>
           <div className="flex flex-col sm:flex-row gap-2 mt-6 w-full mb-16">
             <Button className="w-full" color="primary" type="submit">
               Submit
@@ -1282,6 +1142,118 @@ const CreateWorkoutPage = () => {
           </div>
         </div>
       )}
+      {/* Modal for Adding Custom Exercise — outside parent Form to avoid nested form conflicts */}
+      <ClientOnly>
+        <Modal
+          backdrop="opaque"
+          isOpen={isCustomOpen}
+          onClose={onCustomClose}
+          radius="lg"
+          onOpenChange={onCustomOpenChange}
+          placement="center"
+          classNames={{
+            base: "max-w-[95%] sm:max-w-md mx-auto",
+            wrapper: "items-center justify-center p-2",
+            body: "p-4",
+            footer:
+              "pt-3 px-6 pb-5 flex flex-row gap-3 justify-end border-t border-default-200",
+          }}
+        >
+          <ModalContent className="max-w-md mx-auto">
+            {(onCustomClose) => (
+              <>
+                <ModalHeader className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold">Add Custom Exercise</h3>
+                </ModalHeader>
+
+                <ModalBody>
+                  <div className="alert-warning mb-4">
+                    <strong>NOTE:</strong> Creating a custom exercise here will
+                    add it to your Exercise Library.
+                  </div>
+
+                  <div className="flex flex-col gap-5">
+                    <Input
+                      isRequired
+                      label="Exercise Name"
+                      placeholder="Enter exercise name"
+                      value={customExerciseName}
+                      onChange={(e) => {
+                        setCustomExerciseName(e.target.value);
+                        if (customExerciseError) setCustomExerciseError(null);
+                      }}
+                      variant="bordered"
+                      labelPlacement="outside"
+                      isInvalid={!!customExerciseError}
+                      errorMessage={customExerciseError ?? undefined}
+                      classNames={{
+                        label: "text-sm font-medium text-default-700 mb-1.5",
+                        inputWrapper:
+                          "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                      }}
+                    />
+
+                    <Select
+                      isRequired
+                      label="Category"
+                      placeholder="Select a category"
+                      selectedKeys={
+                        selectedCategory ? [String(selectedCategory)] : []
+                      }
+                      onChange={(e) =>
+                        setSelectedCategory(Number(e.target.value))
+                      }
+                      variant="bordered"
+                      labelPlacement="outside"
+                      classNames={{
+                        label: "text-sm font-medium text-default-700 mb-1.5",
+                        trigger:
+                          "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                        popoverContent: "shadow-lg",
+                      }}
+                    >
+                      {categories.map((category) => (
+                        <SelectItem
+                          key={String(category.id)}
+                          value={category.id}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </Select>
+
+                    <Textarea
+                      label="Description"
+                      placeholder="Describe the exercise (optional)"
+                      value={customExerciseDescription}
+                      onChange={(e) =>
+                        setCustomExerciseDescription(e.target.value)
+                      }
+                      variant="bordered"
+                      labelPlacement="outside"
+                      minRows={3}
+                      classNames={{
+                        label: "text-sm font-medium text-default-700 mb-1.5",
+                        inputWrapper:
+                          "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                      }}
+                    />
+                  </div>
+                </ModalBody>
+
+                <ModalFooter className="pt-5 border-t border-default-200">
+                  <Button color="danger" variant="flat" onPress={onCustomClose}>
+                    Cancel
+                  </Button>
+                  <Button color="primary" onPress={handleCustomExerciseSubmit}>
+                    Add Exercise
+                  </Button>
+                </ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
+      </ClientOnly>
       {/* Exercise deletion confirmation modal */}
       <ClientOnly>
         <Modal

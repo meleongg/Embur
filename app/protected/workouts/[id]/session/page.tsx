@@ -220,6 +220,9 @@ export default function WorkoutSession() {
   const [customExerciseError, setCustomExerciseError] = useState<string | null>(
     null
   );
+  const [customExerciseName, setCustomExerciseName] = useState("");
+  const [customExerciseDescription, setCustomExerciseDescription] =
+    useState("");
 
   // Add these state variables with your other useDisclosure hooks
   const {
@@ -456,26 +459,33 @@ export default function WorkoutSession() {
     setSessionExercises(freshExercises);
   }, [workoutExercises, activeSession, isLoading, sessionExercises.length]);
 
-  // 2. Update the handleCustomExerciseSubmit function to check for duplicates
-  const handleCustomExerciseSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleOpenCustomModal = () => {
+    setCustomExerciseError(null);
+    setCustomExerciseName("");
+    setCustomExerciseDescription("");
+    setSelectedCategory(undefined);
+    onCustomOpen();
+  };
 
-    // Reset error state
+  const handleCustomExerciseSubmit = async () => {
     setCustomExerciseError(null);
 
-    const data = Object.fromEntries(
-      new FormData(e.currentTarget as HTMLFormElement)
-    );
-    const { exerciseName, exerciseDescription } = data;
+    const exerciseName = customExerciseName.trim();
+    const exerciseDescription = customExerciseDescription.trim();
+
+    if (!exerciseName) {
+      setCustomExerciseError("Exercise name is required");
+      return;
+    }
+
+    if (!selectedCategory) {
+      toast.error("Please select a category");
+      return;
+    }
 
     try {
-      // Show loading toast
       const toastId = toast.loading("Adding custom exercise...");
 
-      // Get the authenticated user
       const {
         data: { user },
         error: authError,
@@ -493,11 +503,10 @@ export default function WorkoutSession() {
         throw new Error("No authenticated user found");
       }
 
-      // Check if any exercise with this name already exists
       const { data: existingExercises, error: searchError } = await supabase
         .from("exercises")
         .select("id, name")
-        .ilike("name", exerciseName as string);
+        .ilike("name", exerciseName);
 
       if (searchError) {
         toast.dismiss(toastId);
@@ -513,12 +522,11 @@ export default function WorkoutSession() {
         return;
       }
 
-      // Continue with exercise creation
       const { data: insertedExercise, error } = await supabase
         .from("exercises")
         .insert({
           name: exerciseName,
-          category_id: selectedCategory || null,
+          category_id: selectedCategory,
           description: exerciseDescription || null,
           user_id: user.id,
           is_default: false,
@@ -533,11 +541,9 @@ export default function WorkoutSession() {
         return;
       }
 
-      // Success toast
       toast.dismiss(toastId);
       toast.success(`${insertedExercise.name} added to your exercise library!`);
 
-      // Add exercise directly to the current workout session
       const newSessionExercise = {
         id: insertedExercise.id,
         name: insertedExercise.name,
@@ -555,7 +561,6 @@ export default function WorkoutSession() {
 
       setSessionExercises((prev) => [...prev, newSessionExercise]);
 
-      // Close the modal and refresh exercise list
       onCustomClose();
       fetchExercises(currentPage);
     } catch (error: any) {
@@ -1773,7 +1778,7 @@ export default function WorkoutSession() {
               color="secondary"
               className="w-full sm:w-auto"
               startContent={<Dumbbell className="h-4 w-4" />} // Changed from ExternalLink to Dumbbell
-              onPress={onCustomOpen}
+              onPress={handleOpenCustomModal}
               type="button"
             >
               Add Custom Exercise
@@ -2468,40 +2473,32 @@ export default function WorkoutSession() {
               </ModalHeader>
 
               <ModalBody className="gap-5 py-2">
-                {/* Note section with improved styling */}
-                <div className="alert-warning">
+                <div className="alert-warning mb-4">
                   <strong>NOTE:</strong> Creating a custom exercise here will
                   add it to your Exercise Library.
                 </div>
 
-                <form
-                  id="custom-exercise-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleCustomExerciseSubmit(e);
-                  }}
-                  className="flex flex-col gap-5"
-                >
-                  {/* Exercise Name Input - simplified structure */}
+                <div className="flex flex-col gap-5">
                   <Input
                     isRequired
                     label="Exercise Name"
-                    name="exerciseName"
                     placeholder="Enter exercise name"
+                    value={customExerciseName}
+                    onChange={(e) => {
+                      setCustomExerciseName(e.target.value);
+                      if (customExerciseError) setCustomExerciseError(null);
+                    }}
                     variant="bordered"
                     labelPlacement="outside"
-                    errorMessage={customExerciseError}
-                    onChange={() =>
-                      customExerciseError && setCustomExerciseError(null)
-                    }
+                    isInvalid={!!customExerciseError}
+                    errorMessage={customExerciseError ?? undefined}
                     classNames={{
                       label: "text-sm font-medium text-default-700 mb-1.5",
-                      inputWrapper: "shadow-sm",
+                      inputWrapper:
+                        "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
                     }}
                   />
 
-                  {/* Category Selection - simplified structure */}
                   <Select
                     isRequired
                     label="Category"
@@ -2512,12 +2509,12 @@ export default function WorkoutSession() {
                     onChange={(e) =>
                       setSelectedCategory(Number(e.target.value))
                     }
-                    name="exerciseCategory"
                     variant="bordered"
                     labelPlacement="outside"
                     classNames={{
                       label: "text-sm font-medium text-default-700 mb-1.5",
-                      trigger: "shadow-sm",
+                      trigger:
+                        "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
                       popoverContent: "shadow-lg",
                     }}
                   >
@@ -2528,37 +2525,30 @@ export default function WorkoutSession() {
                     ))}
                   </Select>
 
-                  {/* Description Textarea - simplified structure */}
                   <Textarea
                     label="Description"
-                    name="exerciseDescription"
                     placeholder="Describe the exercise (optional)"
+                    value={customExerciseDescription}
+                    onChange={(e) =>
+                      setCustomExerciseDescription(e.target.value)
+                    }
                     variant="bordered"
                     labelPlacement="outside"
                     minRows={3}
                     classNames={{
                       label: "text-sm font-medium text-default-700 mb-1.5",
-                      inputWrapper: "shadow-sm",
+                      inputWrapper:
+                        "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
                     }}
                   />
-                </form>
+                </div>
               </ModalBody>
 
               <ModalFooter className="pt-5 border-t border-default-200">
                 <Button color="danger" variant="flat" onPress={onCustomClose}>
                   Cancel
                 </Button>
-                <Button
-                  color="primary"
-                  onPress={() => {
-                    const form = document.getElementById(
-                      "custom-exercise-form"
-                    ) as HTMLFormElement;
-                    if (form) {
-                      form.requestSubmit();
-                    }
-                  }}
-                >
+                <Button color="primary" onPress={handleCustomExerciseSubmit}>
                   Add Exercise
                 </Button>
               </ModalFooter>
