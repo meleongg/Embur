@@ -3,6 +3,12 @@
 import ActiveSessionBanner from "@/components/active-session-banner";
 import PageTitle from "@/components/ui/page-title";
 import { useSession } from "@/contexts/SessionContext";
+import {
+  fetchWorkoutCategories,
+  fetchWorkoutsList,
+} from "@/lib/queries/workouts";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import {
   Button,
@@ -23,6 +29,7 @@ import {
   SelectItem,
   Skeleton,
 } from "@nextui-org/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowUpDown,
   ChevronLeft,
@@ -33,13 +40,6 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { queryKeys } from "@/lib/query-keys";
-import {
-  fetchWorkoutCategories,
-  fetchWorkoutsList,
-} from "@/lib/queries/workouts";
-import { toast } from "@/lib/toast";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -450,9 +450,7 @@ export default function WorkoutsPage() {
                       size="sm"
                       variant="bordered"
                       classNames={{
-                        base: "border-border/70 bg-content2 dark:border-default-400 dark:bg-content3",
-                        content:
-                          "text-default-600 dark:text-default-300 font-medium",
+                        base: "border-border/70 bg-content2 text-muted-foreground dark:border-default-400 dark:bg-content3",
                       }}
                     >
                       {workout.workout_exercises.length} exercises

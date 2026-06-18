@@ -1,0 +1,26 @@
+---
+description: Always read this file to understand the current task state, feature sprint goals, and active context handoffs.
+globs: ["*"]
+alwaysApply: true
+---
+
+# 🚀 Project Build Status & Feature Roadmap
+
+## 🎯 Current Active Sprint
+
+- [ ] Task 1: [Replace with your first major implementation task]
+- [ ] Task 2: [Replace with your second major implementation task]
+- [ ] Task 3: [Replace with your third major implementation task]
+
+## ⏳ Feature Backlog
+
+- [ ] Future Feature A: [Replace with post-MVP or low-priority goals]
+- [ ] Future Feature B: [Replace with post-MVP or low-priority goals]
+
+## 🔄 Active Context Handoff
+
+- **Active Files:** None (Initialization phase)
+- **Current Status:** [Replace with current high-level state of the app]
+- **Immediate Next Step:** [Replace with the very next piece of code to write]
+
+---
