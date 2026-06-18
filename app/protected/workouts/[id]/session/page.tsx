@@ -2285,6 +2285,7 @@ export default function WorkoutSession() {
         classNames={{
           base: "max-w-[95%] sm:max-w-3xl mx-auto max-h-[80vh]", // Add max height
           wrapper: "items-start justify-center p-2 pt-8", // Align to top
+          header: "border-b border-default-200",
           body: "p-4 overflow-auto pb-12", // Add bottom padding for keyboard space
           footer:
             "pt-3 px-6 pb-5 flex flex-row gap-3 justify-end sticky bottom-0 z-10 bg-background border-t border-default-200", // Make footer sticky
@@ -2293,8 +2294,8 @@ export default function WorkoutSession() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
-                Select Exercise
+              <ModalHeader className="flex flex-col gap-1 pb-4">
+                <h3 className="text-lg font-bold">Select Exercise</h3>
               </ModalHeader>
               <ModalBody>
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -2305,6 +2306,11 @@ export default function WorkoutSession() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="flex-1"
+                    variant="bordered"
+                    classNames={{
+                      inputWrapper:
+                        "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                    }}
                     startContent={<Search className="h-4 w-4" />}
                     isClearable
                     onClear={() => setSearchQuery("")}
@@ -2318,6 +2324,11 @@ export default function WorkoutSession() {
                     onChange={(e) => setCategoryFilter(e.target.value)}
                     className="sm:w-1/3"
                     size="sm"
+                    variant="bordered"
+                    classNames={{
+                      trigger:
+                        "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                    }}
                   >
                     <>
                       <SelectItem key="all" value="all">
@@ -2415,6 +2426,11 @@ export default function WorkoutSession() {
                   initialPage={1}
                   page={currentPage}
                   onChange={(page) => setCurrentPage(page)}
+                  classNames={{
+                    item: "bg-default-100 dark:bg-default-100/40 border border-default-200 text-default-600",
+                    cursor:
+                      "bg-primary text-primary-foreground font-medium border border-primary",
+                  }}
                 />
               </ModalBody>
               <ModalFooter>

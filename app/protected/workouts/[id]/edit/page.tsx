@@ -1076,7 +1076,7 @@ export default function EditWorkout() {
               <ModalContent>
                 {(onClose) => (
                   <>
-                    <ModalHeader>
+                    <ModalHeader className="pb-4">
                       <h3 className="text-lg font-bold">Select Exercise</h3>
                     </ModalHeader>
                     <ModalBody>
@@ -1097,6 +1097,11 @@ export default function EditWorkout() {
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
                               className="flex-1"
+                              variant="bordered"
+                              classNames={{
+                                inputWrapper:
+                                  "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                              }}
                               startContent={
                                 <svg
                                   width="16"
@@ -1132,6 +1137,11 @@ export default function EditWorkout() {
                               }
                               className="sm:w-1/3"
                               size="sm"
+                              variant="bordered"
+                              classNames={{
+                                trigger:
+                                  "bg-default-100 dark:bg-default-100/40 border-default-200 shadow-sm",
+                              }}
                             >
                               {/* Wrap all items in a fragment to fix the type error */}
                               <>
@@ -1205,6 +1215,11 @@ export default function EditWorkout() {
                             initialPage={1}
                             page={currentPage}
                             onChange={(page) => setCurrentPage(page)}
+                            classNames={{
+                              item: "bg-default-100 dark:bg-default-100/40 border border-default-200 text-default-600",
+                              cursor:
+                                "bg-primary text-primary-foreground font-medium border border-primary",
+                            }}
                           />
                         </>
                       )}
