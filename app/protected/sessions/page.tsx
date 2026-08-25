@@ -28,6 +28,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const EMPTY_SESSIONS: never[] = [];
+const SESSIONS_PER_PAGE = 10;
 
 // Helper functions for stats calculations
 const calculateWorkoutsThisWeek = (sessions: any[]) => {
@@ -57,13 +58,13 @@ const calculateTotalSets = (sessions: any[]) => {
   );
 };
 
-const formatDate = (dateString: string) => {
+const formatDate = (date: Date) => {
   const options: Intl.DateTimeFormatOptions = {
     year: "numeric",
     month: "short",
     day: "numeric",
   };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  return date.toLocaleDateString(undefined, options);
 };
 
 const formatDuration = (start: string, end: string) => {
@@ -77,8 +78,9 @@ const formatDuration = (start: string, end: string) => {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
 
-const getMonthName = (date: Date) => {
-  return date.toLocaleString("default", { month: "long", year: "numeric" });
+const getSessionYear = (startedAt: string): number | null => {
+  const date = new Date(startedAt);
+  return Number.isNaN(date.getTime()) ? null : date.getFullYear();
 };
 
 export default function SessionsPage() {
@@ -93,35 +95,38 @@ export default function SessionsPage() {
   });
   const sessions = data ?? EMPTY_SESSIONS;
 
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<number | "all" | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sessionsPerPage] = useState(10);
 
   const { useMetric, isLoading: loadingPreferences } = useUnitPreference();
 
-  const months = useMemo(() => {
-    if (!sessions.length) return [];
-    const allMonths = sessions.map((s) => getMonthName(new Date(s.started_at)));
-    return Array.from(new Set(allMonths));
+  const years = useMemo(() => {
+    const sessionYears = sessions
+      .map((session) => getSessionYear(session.started_at))
+      .filter((year): year is number => year !== null);
+
+    return Array.from(new Set(sessionYears)).sort((a, b) => b - a);
   }, [sessions]);
 
   useEffect(() => {
-    if (months.length === 0) {
-      if (selectedMonth) setSelectedMonth("");
+    if (years.length === 0) {
+      if (selectedYear !== null) setSelectedYear(null);
       return;
     }
-    if (!selectedMonth || !months.includes(selectedMonth)) {
-      setSelectedMonth(months[0]);
+    if (
+      selectedYear === null ||
+      (selectedYear !== "all" && !years.includes(selectedYear))
+    ) {
+      setSelectedYear(years[0]);
     }
-  }, [months, selectedMonth]);
+  }, [years, selectedYear]);
 
   const filteredSessions = useMemo(() => {
-    if (!selectedMonth || !sessions.length) return sessions;
-    return sessions.filter((session) => {
-      const sessionMonth = getMonthName(new Date(session.started_at));
-      return sessionMonth === selectedMonth;
-    });
-  }, [sessions, selectedMonth]);
+    if (selectedYear === null || selectedYear === "all") return sessions;
+    return sessions.filter(
+      (session) => getSessionYear(session.started_at) === selectedYear
+    );
+  }, [sessions, selectedYear]);
 
   useEffect(() => {
     if (isError) {
@@ -139,36 +144,47 @@ export default function SessionsPage() {
       : "Could not load your workout history"
     : null;
 
-  const sessionsByDate = useMemo(() => {
-    return filteredSessions.reduce((groups: Record<string, any[]>, session) => {
-      const date = new Date(session.started_at).toDateString();
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(session);
-      return groups;
-    }, {});
-  }, [filteredSessions]);
-
-  const paginatedSessionsByDate = useMemo(() => {
-    const dateSessionPairs = Object.entries(sessionsByDate);
-    const indexOfLastItem = currentPage * sessionsPerPage;
-    const indexOfFirstItem = indexOfLastItem - sessionsPerPage;
-    const currentItems = dateSessionPairs.slice(
-      indexOfFirstItem,
-      indexOfLastItem
-    );
-    return currentItems.reduce<Record<string, any[]>>(
-      (acc, [date, dateSessions]) => {
-        acc[date] = dateSessions;
-        return acc;
-      },
-      {}
-    );
-  }, [sessionsByDate, currentPage, sessionsPerPage]);
-
   const totalPages = Math.max(
     1,
-    Math.ceil(Object.keys(sessionsByDate).length / sessionsPerPage)
+    Math.ceil(filteredSessions.length / SESSIONS_PER_PAGE)
   );
+  const page = Math.min(currentPage, totalPages);
+
+  useEffect(() => {
+    setCurrentPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
+
+  const paginatedSessions = useMemo(
+    () =>
+      filteredSessions.slice(
+        (page - 1) * SESSIONS_PER_PAGE,
+        page * SESSIONS_PER_PAGE
+      ),
+    [filteredSessions, page]
+  );
+
+  const paginatedSessionsByDate = useMemo(() => {
+    const groups = new Map<
+      string,
+      { key: string; date: Date; sessions: any[] }
+    >();
+
+    paginatedSessions.forEach((session) => {
+      const date = new Date(session.started_at);
+      const key = Number.isNaN(date.getTime())
+        ? `invalid-${session.id}`
+        : `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      const group = groups.get(key);
+
+      if (group) {
+        group.sessions.push(session);
+      } else {
+        groups.set(key, { key, date, sessions: [session] });
+      }
+    });
+
+    return Array.from(groups.values());
+  }, [paginatedSessions]);
 
   const displayTotalWeight = (totalKg: number): number | string => {
     if (loadingPreferences) return "-";
@@ -280,7 +296,7 @@ export default function SessionsPage() {
         )}
       </div>
 
-      {/* Month filter — wrap on desktop, scroll only if needed on small screens */}
+      {/* Year filters keep a long history discoverable without a chip per month. */}
       <div className="mb-6 min-w-0">
         <div className="flex flex-wrap gap-2 sm:gap-2.5">
           {isLoading ? (
@@ -291,24 +307,39 @@ export default function SessionsPage() {
                   <Skeleton key={i} className="h-9 w-28 rounded-lg shrink-0" />
                 ))}
             </>
-          ) : (
-            months.map((month) => (
+          ) : years.length > 0 ? (
+            <>
               <Button
-                key={month}
                 size="sm"
                 radius="lg"
-                variant={selectedMonth === month ? "solid" : "flat"}
-                color={selectedMonth === month ? "primary" : "default"}
+                variant={selectedYear === "all" ? "solid" : "flat"}
+                color={selectedYear === "all" ? "primary" : "default"}
                 onPress={() => {
-                  setSelectedMonth(month);
+                  setSelectedYear("all");
                   setCurrentPage(1);
                 }}
                 className="shrink-0 min-w-[7rem] px-4"
               >
-                {month}
+                All years
               </Button>
-            ))
-          )}
+              {years.map((year) => (
+                <Button
+                  key={year}
+                  size="sm"
+                  radius="lg"
+                  variant={selectedYear === year ? "solid" : "flat"}
+                  color={selectedYear === year ? "primary" : "default"}
+                  onPress={() => {
+                    setSelectedYear(year);
+                    setCurrentPage(1);
+                  }}
+                  className="shrink-0 min-w-[7rem] px-4"
+                >
+                  {year}
+                </Button>
+              ))}
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -325,7 +356,7 @@ export default function SessionsPage() {
                 </div>
               ))}
           </>
-        ) : Object.keys(paginatedSessionsByDate).length === 0 ? (
+        ) : paginatedSessionsByDate.length === 0 ? (
           // Enhanced empty state
           <Card className="py-12 px-6">
             <CardBody className="items-center justify-center text-center">
@@ -337,8 +368,8 @@ export default function SessionsPage() {
               </div>
               <h3 className="text-xl font-semibold mb-2">No sessions found</h3>
               <p className="text-default-500 max-w-md mx-auto mb-6">
-                {selectedMonth
-                  ? `You don't have any workout sessions recorded for ${selectedMonth}.`
+                {selectedYear && selectedYear !== "all"
+                  ? `You don't have any workout sessions recorded for ${selectedYear}.`
                   : "You haven't recorded any workout sessions yet."}
               </p>
               <Button
@@ -354,15 +385,15 @@ export default function SessionsPage() {
           </Card>
         ) : (
           <>
-            {Object.entries(paginatedSessionsByDate).map(
-              ([date, dateSessions]) => (
-                <div key={date} className="animate-fadeIn">
+            {paginatedSessionsByDate.map(
+              ({ key, date, sessions: dateSessions }) => (
+                <div key={key} className="animate-fadeIn">
                   <div className="flex items-center mb-3 sticky top-0 bg-background/80 backdrop-blur-sm py-2 z-10">
                     <div className="h-6 w-1 bg-primary rounded-full mr-2"></div>
                     <h3 className="text-md font-medium">{formatDate(date)}</h3>
                   </div>
                   <div className="space-y-4">
-                    {(dateSessions as any[]).map((session) => (
+                    {dateSessions.map((session) => (
                       <Card
                         key={session.id}
                         isPressable
@@ -431,8 +462,7 @@ export default function SessionsPage() {
               <div className="flex justify-center mt-12 mb-4">
                 <Pagination
                   total={totalPages}
-                  initialPage={currentPage}
-                  page={currentPage}
+                  page={page}
                   onChange={(page) => {
                     setCurrentPage(page);
                     // Scroll back to top when changing pages
