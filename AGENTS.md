@@ -8,9 +8,15 @@
 - UI data is fetched through TanStack Query and the shared keys in `lib/query-keys.ts`. Mutations must invalidate the affected shared key(s), otherwise routes can show stale workout/session data.
 - Dates in the session history are displayed and grouped in the browser's local timezone. Keep filtering and grouping on the same local-date basis unless a product decision explicitly changes that rule.
 
+## Secrets and environment files
+
+- **Do not open, read, search, edit, or commit any `.env` / `.env.*` files** (including `.env.local`). These contain secrets and must stay out of agent context.
+- Never request, print, paraphrase, or invent values from those files. Name the required keys only when documenting setup (e.g. `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
+- `.cursorignore` excludes env files from Cursor indexing; treat that as a hard boundary, not a soft hint.
+
 ## Development workflow
 
-1. Install dependencies with `npm install`; provide `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`.
+1. Install dependencies with `npm install`; provide `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local` (create the file yourself; agents must not open it).
 2. Run `npm run dev` for local work. PWA generation is disabled in development; use `npm run pwa-dev` only when validating service-worker behavior.
 3. Before handoff, run `npm run format:check` and `npm run build`. There is currently no dedicated test script.
 
