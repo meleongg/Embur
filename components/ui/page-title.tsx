@@ -15,10 +15,12 @@ export default function PageTitle({
   const router = useRouter();
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-4">
-      <h1 className={`text-2xl font-bold ${className}`}>{title}</h1>
+    <div
+      className={`flex w-full min-w-0 items-center justify-between gap-3 ${className}`}
+    >
+      <h1 className="min-w-0 truncate text-2xl font-bold">{title}</h1>
       {showSettingsButton && (
-        <div className="flex gap-2 self-end sm:self-auto">
+        <div className="flex shrink-0 gap-2">
           <Button
             isIconOnly
             color="primary"

@@ -211,82 +211,82 @@ export default function SessionsPage() {
     <div className="flex min-w-0 w-full max-w-full flex-col overflow-x-hidden pb-16">
       <PageTitle title="Workout History" />
 
-      <div className="mt-4 mb-8 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-4">
+      <div className="mt-4 mb-8 grid min-w-0 grid-cols-2 gap-3 md:grid-cols-4">
         {isLoading ? (
           Array(4)
             .fill(0)
             .map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
-            <Card className="min-w-0 bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
-              <CardBody className="p-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-primary font-medium">
+            <Card className="min-w-0 overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
+              <CardBody className="overflow-hidden p-3">
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-primary font-medium truncate">
                       Total Sessions
                     </p>
-                    <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
+                    <h3 className="text-2xl sm:text-3xl font-bold mt-1 font-mono tabular-nums truncate">
                       {sessions.length}
                     </h3>
                   </div>
-                  <div className="bg-primary/15 p-2 rounded-lg">
+                  <div className="bg-primary/15 p-2 rounded-lg shrink-0">
                     <Calendar className="h-5 w-5 text-primary" />
                   </div>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="min-w-0 bg-gradient-to-br from-success/20 to-success/5 border border-success/10">
-              <CardBody className="p-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-success font-medium">
+            <Card className="min-w-0 overflow-hidden bg-gradient-to-br from-success/20 to-success/5 border border-success/10">
+              <CardBody className="overflow-hidden p-3">
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-success font-medium truncate">
                       This Week
                     </p>
-                    <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
+                    <h3 className="text-2xl sm:text-3xl font-bold mt-1 font-mono tabular-nums truncate">
                       {calculateWorkoutsThisWeek(sessions)}
                     </h3>
                   </div>
-                  <div className="bg-success/15 p-2 rounded-lg">
+                  <div className="bg-success/15 p-2 rounded-lg shrink-0">
                     <Calendar className="h-5 w-5 text-success" />
                   </div>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="min-w-0 bg-gradient-to-br from-muted to-secondary border border-border">
-              <CardBody className="p-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">
+            <Card className="min-w-0 overflow-hidden bg-gradient-to-br from-muted to-secondary border border-border">
+              <CardBody className="overflow-hidden p-3">
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-muted-foreground font-medium truncate">
                       Sets Completed
                     </p>
-                    <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
+                    <h3 className="text-2xl sm:text-3xl font-bold mt-1 font-mono tabular-nums truncate">
                       {calculateTotalSets(sessions)}
                     </h3>
                   </div>
-                  <div className="bg-foreground/5 p-2 rounded-lg">
+                  <div className="bg-foreground/5 p-2 rounded-lg shrink-0">
                     <Award className="h-5 w-5 text-foreground" />
                   </div>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="min-w-0 bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/10">
-              <CardBody className="p-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-warning font-medium">
+            <Card className="min-w-0 overflow-hidden bg-gradient-to-br from-warning/20 to-warning/5 border border-warning/10">
+              <CardBody className="overflow-hidden p-3">
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm text-warning font-medium truncate">
                       Total Volume
                     </p>
-                    <h3 className="text-3xl font-bold mt-1 font-mono tabular-nums">
+                    <h3 className="text-2xl sm:text-3xl font-bold mt-1 font-mono tabular-nums truncate">
                       {displayTotalWeight(calculateTotalWeight(sessions))}
                       <span className="text-sm ml-1 font-normal font-sans">
                         {useMetric ? "kg" : "lbs"}
                       </span>
                     </h3>
                   </div>
-                  <div className="bg-warning/15 p-2 rounded-lg">
+                  <div className="bg-warning/15 p-2 rounded-lg shrink-0">
                     <BarChart3 className="h-5 w-5 text-warning" />
                   </div>
                 </div>
@@ -318,7 +318,7 @@ export default function SessionsPage() {
                   setSelectedYear("all");
                   setCurrentPage(1);
                 }}
-                className="shrink-0 min-w-[7rem] px-4"
+                className="shrink-0 min-w-0 px-4"
               >
                 All years
               </Button>
@@ -333,7 +333,7 @@ export default function SessionsPage() {
                     setSelectedYear(year);
                     setCurrentPage(1);
                   }}
-                  className="shrink-0 min-w-[7rem] px-4"
+                  className="shrink-0 min-w-0 px-4"
                 >
                   {year}
                 </Button>
@@ -399,13 +399,13 @@ export default function SessionsPage() {
                         isPressable
                         as={Link}
                         href={`/protected/sessions/${session.id}`}
-                        className="shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                        className="min-w-0 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
                       >
-                        <CardBody className="p-0">
+                        <CardBody className="p-0 overflow-hidden">
                           <div className="p-4">
                             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
-                              <div>
-                                <h3 className="text-lg font-bold mb-1">
+                              <div className="min-w-0">
+                                <h3 className="text-lg font-bold mb-1 truncate">
                                   {session.workout.name}
                                 </h3>
                                 <div className="flex items-center flex-wrap gap-3 text-sm text-default-500">
@@ -459,7 +459,7 @@ export default function SessionsPage() {
 
             {/* Improved Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex justify-center mt-12 mb-4">
+              <div className="mt-12 mb-4 flex min-w-0 justify-center overflow-x-auto">
                 <Pagination
                   total={totalPages}
                   page={page}
@@ -470,8 +470,10 @@ export default function SessionsPage() {
                   }}
                   color="primary"
                   showControls
-                  size="lg"
+                  size="sm"
                   classNames={{
+                    base: "max-w-full",
+                    wrapper: "gap-0.5 sm:gap-1 flex-wrap justify-center",
                     cursor: "shadow-md",
                   }}
                 />
