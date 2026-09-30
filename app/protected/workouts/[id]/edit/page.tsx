@@ -454,19 +454,26 @@ export default function EditWorkout() {
       // Delete any workout_exercises that are no longer in the list
       const currentExerciseIds = workoutExercises.map((e) => e.id);
 
-      if (currentExerciseIds.length > 0) {
-        const { error: deleteError } = await supabase
-          .from("workout_exercises")
-          .delete()
-          .eq("workout_id", workoutId)
-          .not("exercise_id", "in", `(${currentExerciseIds.join(",")})`);
+      let deleteQuery = supabase
+        .from("workout_exercises")
+        .delete()
+        .eq("workout_id", workoutId);
 
-        if (deleteError) {
-          toast.dismiss(toastId);
-          toast.error("Failed to remove deleted exercises");
-          console.error("Error cleaning up old exercises:", deleteError);
-          return;
-        }
+      if (currentExerciseIds.length > 0) {
+        deleteQuery = deleteQuery.not(
+          "exercise_id",
+          "in",
+          `(${currentExerciseIds.join(",")})`
+        );
+      }
+
+      const { error: deleteError } = await deleteQuery;
+
+      if (deleteError) {
+        toast.dismiss(toastId);
+        toast.error("Failed to remove deleted exercises");
+        console.error("Error cleaning up old exercises:", deleteError);
+        return;
       }
 
       // Show success toast

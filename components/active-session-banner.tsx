@@ -46,8 +46,8 @@ export default function ActiveSessionBanner() {
     return () => clearInterval(interval);
   }, [activeSession, isClient]);
 
-  const handleEndSession = () => {
-    endSession();
+  const handleDiscardSession = async () => {
+    await endSession();
     setShowEndConfirmation(false);
 
     setTimeout(() => {
@@ -78,7 +78,7 @@ export default function ActiveSessionBanner() {
             className="w-full sm:w-auto"
             onPress={() => setShowEndConfirmation(true)}
           >
-            End Session
+            Discard Session
           </Button>
           <Button
             as={Link}
@@ -103,13 +103,19 @@ export default function ActiveSessionBanner() {
         size="sm"
       >
         <ModalContent>
-          {(onClose) => (
+          {() => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                End Session?
+                Discard Session?
               </ModalHeader>
               <ModalBody>
-                <p>Are you sure you want to end this workout session?</p>
+                <div className="space-y-3">
+                  <p>Are you sure you want to discard this workout session?</p>
+                  <p className="text-danger">
+                    This action cannot be undone, and your progress will be
+                    lost.
+                  </p>
+                </div>
               </ModalBody>
               <ModalFooter>
                 <Button
@@ -117,10 +123,10 @@ export default function ActiveSessionBanner() {
                   variant="light"
                   onPress={() => setShowEndConfirmation(false)}
                 >
-                  Cancel
+                  Keep Working Out
                 </Button>
-                <Button color="danger" onPress={handleEndSession}>
-                  End Session
+                <Button color="danger" onPress={handleDiscardSession}>
+                  Yes, Discard Session
                 </Button>
               </ModalFooter>
             </>

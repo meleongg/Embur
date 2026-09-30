@@ -50,9 +50,12 @@ export const updateSession = async (request: NextRequest) => {
 
     return response;
   } catch (e) {
-    // If you are here, a Supabase client could not be created!
-    // This is likely because you have not set up environment variables.
-    // Check out http://localhost:3000 for Next Steps.
+    // If a Supabase client could not be created (missing env), fail closed for
+    // protected routes instead of serving them without session refresh/guard.
+    if (request.nextUrl.pathname.startsWith("/protected")) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+
     return NextResponse.next({
       request: {
         headers: request.headers,

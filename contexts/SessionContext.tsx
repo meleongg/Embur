@@ -53,16 +53,24 @@ interface SessionContextProps {
     };
   }) => void;
   updateSessionProgress: (exercises: SessionExercise[]) => void;
-  endSession: () => void;
+  endSession: () => Promise<void>;
   getElapsedMinutes: () => number;
   formatSessionDate: (dateString: string) => string;
 }
+
+const SESSION_CHANNEL = "embur-active-session";
 
 const SessionContext = createContext<SessionContextProps | undefined>(
   undefined
 );
 
 export { SESSION_STORAGE_KEY } from "@/lib/storage-keys";
+
+function isValidSessionShape(session: unknown): session is ActiveSession {
+  if (!session || typeof session !== "object") return false;
+  const value = session as ActiveSession;
+  return Boolean(value.workoutId && value.workoutName && value.startTime);
+}
 
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(
@@ -72,6 +80,21 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
   const [isHydrated, setIsHydrated] = useState(false);
   const endTimeRef = useRef<number | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Bumps on end/start so stale debounced IDB writes from this or other paths are dropped
+  const sessionEpochRef = useRef(0);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
+  const cancelPendingSave = () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+  };
+
+  const bumpEpoch = () => {
+    sessionEpochRef.current += 1;
+    return sessionEpochRef.current;
+  };
 
   // Load session from IndexedDB first, then localStorage as fallback
   useEffect(() => {
@@ -109,12 +132,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
             "⚠️ Loaded session from localStorage (IndexedDB was empty)"
           );
           const parsedSession = JSON.parse(savedSession);
-          if (
-            parsedSession &&
-            parsedSession.workoutId &&
-            parsedSession.workoutName &&
-            parsedSession.startTime
-          ) {
+          if (isValidSessionShape(parsedSession)) {
             const validDate = validateStartTime(parsedSession.startTime);
             const session = {
               ...parsedSession,
@@ -149,7 +167,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     loadSession();
   }, []);
 
-  // Listen for storage events to handle changes from other tabs
+  // Cross-tab sync: storage events + BroadcastChannel for end/clear
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -158,34 +176,59 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       if (savedSession) {
         try {
           const parsedSession = JSON.parse(savedSession);
-          if (parsedSession && parsedSession.startTime) {
-            // Ensure we have a valid date when loading from other tabs
+          if (isValidSessionShape(parsedSession)) {
             parsedSession.startTime = validateStartTime(
               parsedSession.startTime
             );
             setActiveSession(parsedSession);
           } else {
+            cancelPendingSave();
+            bumpEpoch();
             setActiveSession(null);
           }
         } catch (e) {
           console.error("Error parsing saved session:", e);
+          cancelPendingSave();
+          bumpEpoch();
           setActiveSession(null);
         }
       } else {
+        // Another tab cleared the session — drop pending IDB writes
+        cancelPendingSave();
+        bumpEpoch();
         setActiveSession(null);
       }
     };
 
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel(SESSION_CHANNEL);
+      channelRef.current = channel;
+      channel.onmessage = (event) => {
+        if (event.data?.type === "session-ended") {
+          cancelPendingSave();
+          bumpEpoch();
+          setActiveSession(null);
+          localStorage.removeItem(SESSION_STORAGE_KEY);
+        }
+      };
+    } catch {
+      // BroadcastChannel unsupported — storage events still cover most cases
+    }
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      channel?.close();
+      channelRef.current = null;
+    };
   }, []);
 
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      cancelPendingSave();
     };
   }, []);
 
@@ -195,34 +238,37 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
     const handleVisibilityChange = async () => {
       if (document.hidden && activeSession) {
-        // App is going to background - save immediately
+        cancelPendingSave();
 
-        // Clear debounce and save immediately
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-        }
-
-        // Force immediate save to IndexedDB
+        const epoch = sessionEpochRef.current;
         if (activeSession.progress?.exercises) {
-          await db.saveActiveSession({
-            id: "active",
-            workoutId: activeSession.workoutId,
-            workoutName: activeSession.workoutName,
-            startTime: activeSession.startTime,
-            lastUpdated: new Date().toISOString(),
-            exercises: activeSession.progress.exercises,
-          });
+          // Only write if session was not ended meanwhile
+          if (
+            epoch === sessionEpochRef.current &&
+            localStorage.getItem(SESSION_STORAGE_KEY)
+          ) {
+            await db.saveActiveSession({
+              id: "active",
+              workoutId: activeSession.workoutId,
+              workoutName: activeSession.workoutName,
+              startTime: activeSession.startTime,
+              lastUpdated: new Date().toISOString(),
+              exercises: activeSession.progress.exercises,
+            });
+          }
         }
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // Also save on beforeunload (when closing/refreshing)
-    const handleBeforeUnload = async () => {
-      if (activeSession?.progress?.exercises) {
-        // Use sendBeacon for guaranteed delivery even as page closes
-        await db.saveActiveSession({
+    const handleBeforeUnload = () => {
+      // Sync path only — avoid racing a cleared session after end
+      if (
+        activeSession?.progress?.exercises &&
+        localStorage.getItem(SESSION_STORAGE_KEY)
+      ) {
+        void db.saveActiveSession({
           id: "active",
           workoutId: activeSession.workoutId,
           workoutName: activeSession.workoutName,
@@ -241,13 +287,12 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [activeSession]);
 
-  // Enhanced date validation
+  // Keep valid timestamps; only replace unparseable or future values.
+  // Do not silently rewrite long-running / overnight sessions.
   const validateStartTime = (timestamp: string): string => {
     try {
-      // Check if the timestamp is a valid date string
       const date = new Date(timestamp);
 
-      // If date is Invalid Date, this will be NaN
       if (isNaN(date.getTime())) {
         console.warn("Invalid date format detected, using current time");
         return new Date().toISOString();
@@ -256,13 +301,11 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       const startTime = date.getTime();
       const currentTime = Date.now();
 
-      // If timestamp is in the future or more than 24 hours in the past, it's invalid
-      if (startTime > currentTime || currentTime - startTime > 86400000) {
-        console.warn("Invalid session timestamp detected, using current time");
+      if (startTime > currentTime + 60_000) {
+        console.warn("Future session timestamp detected, using current time");
         return new Date().toISOString();
       }
 
-      // Ensure we always return in ISO format
       return date.toISOString();
     } catch (e) {
       console.error("Error validating timestamp:", e);
@@ -279,18 +322,16 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       exercises: SessionExercise[];
     };
   }) => {
-    // Add a cooldown check to prevent accidental reactivation
     if (
       isEnding ||
       (endTimeRef.current && Date.now() - endTimeRef.current < 5000)
     ) {
-      return; // Don't allow session start during cooldown
+      return;
     }
 
-    // Validate the timestamp
     const validatedTimestamp = validateStartTime(session.started_at);
+    bumpEpoch();
 
-    // Create the session object
     const newSession: ActiveSession = {
       id: session.user_id,
       workoutId: session.workout_id,
@@ -301,27 +342,24 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       },
     };
 
-    // Update state first
     setActiveSession(newSession);
-
-    // Persist to both storages (IndexedDB is primary, localStorage is cache)
     persistSession(newSession);
   };
 
-  // Debounced save to IndexedDB and localStorage
   const persistSession = async (session: ActiveSession) => {
     try {
-      // Save to localStorage immediately (fast cache)
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
 
-      // Debounce IndexedDB saves to avoid excessive writes
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+      cancelPendingSave();
 
+      const epochAtSchedule = sessionEpochRef.current;
       saveTimeoutRef.current = setTimeout(async () => {
+        // Drop writes if session ended (this tab or another via epoch/storage)
+        if (epochAtSchedule !== sessionEpochRef.current) return;
+        if (!localStorage.getItem(SESSION_STORAGE_KEY)) return;
+
         if (session.progress?.exercises) {
-          const success = await db.saveActiveSession({
+          await db.saveActiveSession({
             id: "active",
             workoutId: session.workoutId,
             workoutName: session.workoutName,
@@ -330,7 +368,7 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
             exercises: session.progress.exercises,
           });
         }
-      }, 500); // 500ms debounce
+      }, 500);
     } catch (error) {
       console.error("Failed to persist session:", error);
     }
@@ -343,60 +381,52 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
       ...activeSession,
       progress: {
         ...activeSession.progress,
-        exercises: exercises, // This preserves the order of exercises
+        exercises: exercises,
       },
     };
 
-    // Update state first
     setActiveSession(updatedSession);
-
-    // Persist to both storages
     persistSession(updatedSession);
   };
 
-  // Calculate elapsed time in minutes
   const getElapsedMinutes = (): number => {
     if (!activeSession) return 0;
 
     const startTime = new Date(activeSession.startTime).getTime();
     const currentTime = Date.now();
 
-    // Convert milliseconds to minutes (rounded to 1 decimal place)
     return Math.round(((currentTime - startTime) / (1000 * 60)) * 10) / 10;
   };
 
-  // Update the endSession function to be more thorough
   const endSession = async () => {
-    // Set cooldown flag
     setIsEnding(true);
     endTimeRef.current = Date.now();
-
-    // Clear any pending saves
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    // Clear React state
+    bumpEpoch();
+    cancelPendingSave();
     setActiveSession(null);
 
     if (typeof window !== "undefined") {
       try {
-        // Clear both storages
         localStorage.removeItem(SESSION_STORAGE_KEY);
         await db.clearActiveSession();
+        try {
+          channelRef.current?.postMessage({ type: "session-ended" });
+        } catch {
+          // ignore BroadcastChannel post failures
+        }
         console.log("🧹 Session cleared from both storages");
-
-        // Reset cooldown flag after 5 seconds
+      } catch (error) {
+        console.error("Error during session cleanup:", error);
+      } finally {
         setTimeout(() => {
           setIsEnding(false);
         }, 5000);
-      } catch (error) {
-        console.error("Error during session cleanup:", error);
       }
+    } else {
+      setIsEnding(false);
     }
   };
 
-  // Add this helper to format dates consistently
   const formatSessionDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
@@ -404,7 +434,6 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
         return "Unknown time";
       }
 
-      // Format: "May 13, 2023 at 2:30 PM"
       return date.toLocaleString("en-US", {
         month: "short",
         day: "numeric",

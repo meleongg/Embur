@@ -54,6 +54,7 @@ import {
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast, toastDebug } from "@/lib/toast";
 import {
   computeSessionTotals,
@@ -61,6 +62,7 @@ import {
   upsertAnalyticsFromSessionExercises,
 } from "@/lib/analytics-upsert";
 import { sessionSetInputClassNames } from "@/lib/nextui-classnames";
+import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
 // Fetch workout data
@@ -205,8 +207,15 @@ export default function WorkoutSession() {
 
   const [sessionStartTime, setSessionStartTime] = useState<string | null>(null);
 
-  const { activeSession, startSession, updateSessionProgress, endSession } =
-    useSession();
+  const {
+    activeSession,
+    isHydrated,
+    startSession,
+    updateSessionProgress,
+    endSession,
+  } = useSession();
+  const queryClient = useQueryClient();
+  const [sessionMismatch, setSessionMismatch] = useState(false);
 
   const [user, setUser] = useState<any>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -298,10 +307,18 @@ export default function WorkoutSession() {
     fetchUser();
   }, []);
 
-  // Start session when page loads
+  // Start or recover session only after hydration, and only for this workout
   useEffect(() => {
-    if (!activeSession && workout && user) {
-      // Starting a new session
+    if (!isHydrated || !workout || !user) return;
+
+    if (activeSession && activeSession.workoutId !== workoutId) {
+      setSessionMismatch(true);
+      return;
+    }
+
+    setSessionMismatch(false);
+
+    if (!activeSession) {
       const timestamp = new Date().toISOString();
       setSessionStartTime(timestamp);
 
@@ -311,33 +328,32 @@ export default function WorkoutSession() {
         workout_name: workout.name,
         started_at: timestamp,
       });
-    } else if (activeSession) {
-      setSessionStartTime(activeSession.startTime);
+      return;
+    }
 
-      // Check if this is a recovered session with existing progress
-      if (
-        activeSession.progress?.exercises &&
-        activeSession.progress.exercises.length > 0 &&
-        !hasShownRecoveryToast.current
-      ) {
-        const completedSets = activeSession.progress.exercises.reduce(
-          (total, ex) =>
-            total + ex.actualSets.filter((s) => s.completed).length,
-          0
+    setSessionStartTime(activeSession.startTime);
+
+    if (
+      activeSession.progress?.exercises &&
+      activeSession.progress.exercises.length > 0 &&
+      !hasShownRecoveryToast.current
+    ) {
+      const completedSets = activeSession.progress.exercises.reduce(
+        (total, ex) => total + ex.actualSets.filter((s) => s.completed).length,
+        0
+      );
+
+      if (completedSets > 0) {
+        toast.success(
+          `Session recovered! ${completedSets} completed set${completedSets !== 1 ? "s" : ""} restored.`,
+          {
+            duration: 4000,
+          }
         );
-
-        if (completedSets > 0) {
-          toast.success(
-            `Session recovered! ${completedSets} completed set${completedSets !== 1 ? "s" : ""} restored.`,
-            {
-              duration: 4000,
-            }
-          );
-          hasShownRecoveryToast.current = true;
-        }
+        hasShownRecoveryToast.current = true;
       }
     }
-  }, [workout, user, activeSession, workoutId, startSession]);
+  }, [isHydrated, workout, user, activeSession, workoutId, startSession]);
 
   // Fetch paginated exercises
   const fetchExercises = async (
@@ -426,14 +442,18 @@ export default function WorkoutSession() {
 
   // Modify your exercise initialization effect
   useEffect(() => {
-    // Wait for workoutExercises to load
-    if (isLoading || workoutExercises.length === 0) return;
+    // Wait for workoutExercises to load and session hydration
+    if (!isHydrated || isLoading || workoutExercises.length === 0) return;
 
     // Skip if we already have session exercises (already initialized)
     if (sessionExercises.length > 0) return;
 
-    // Priority 1: Restore from activeSession if it has data
+    // Never restore progress from a different workout's active session
+    if (activeSession && activeSession.workoutId !== workoutId) return;
+
+    // Priority 1: Restore from activeSession if it has data for this workout
     if (
+      activeSession?.workoutId === workoutId &&
       activeSession?.progress?.exercises &&
       activeSession.progress.exercises.length > 0
     ) {
@@ -543,6 +563,10 @@ export default function WorkoutSession() {
 
       toast.dismiss(toastId);
       toast.success(`${insertedExercise.name} added to your exercise library!`);
+
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.exercises.all,
+      });
 
       const newSessionExercise = {
         id: insertedExercise.id,
@@ -793,7 +817,9 @@ export default function WorkoutSession() {
               "Error inserting session exercise set:",
               exerciseError
             );
-            console.error("Error details:", JSON.stringify(exerciseError));
+            // Roll back the session row so we don't leave an empty/partial session
+            await supabase.from("sessions").delete().eq("id", session.id);
+            throw exerciseError;
           }
         }
       }
@@ -805,7 +831,7 @@ export default function WorkoutSession() {
       );
 
       // After successful session submission
-      endSession();
+      await endSession();
       console.log("endSession called from finalizeSession");
       toast.success("Session completed!");
 
@@ -1079,7 +1105,7 @@ export default function WorkoutSession() {
         <Button
           color="primary"
           className="mt-4"
-          onPress={() => router.push("/login")}
+          onPress={() => router.push("/sign-in")}
         >
           Go to Login
         </Button>
@@ -1087,9 +1113,53 @@ export default function WorkoutSession() {
     );
   }
 
+  if (sessionMismatch && activeSession) {
+    return (
+      <div className="p-4 max-w-lg mx-auto space-y-4">
+        <PageTitle title="Active Session Conflict" />
+        <p className="text-muted-foreground">
+          You already have an active session for{" "}
+          <span className="font-semibold text-foreground">
+            {activeSession.workoutName}
+          </span>
+          . Finish or discard that session before starting another workout.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            color="primary"
+            onPress={() =>
+              router.push(
+                `/protected/workouts/${activeSession.workoutId}/session`
+              )
+            }
+          >
+            Return to Active Session
+          </Button>
+          <Button
+            color="danger"
+            variant="flat"
+            onPress={async () => {
+              await endSession();
+              setSessionMismatch(false);
+              toastDebug("Previous session discarded");
+            }}
+          >
+            Discard Previous Session
+          </Button>
+          <Button
+            variant="light"
+            onPress={() => router.push("/protected/workouts")}
+          >
+            Back to Workouts
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Replace your current loading skeleton section with this updated version:
 
-  if (isLoading) {
+  if (isLoading || !isHydrated) {
     return (
       <div className="w-full max-w-full overflow-x-hidden px-4 animate-fade-in">
         <div className="flex items-center justify-between gap-3">
@@ -1704,19 +1774,22 @@ export default function WorkoutSession() {
                               });
 
                               setTimeout(() => {
-                                const newExercises = [...sessionExercises];
-                                newExercises[exerciseIndex].actualSets.splice(
-                                  setIndex,
-                                  1
-                                );
-                                newExercises[exerciseIndex].actualSets =
-                                  newExercises[exerciseIndex].actualSets.map(
+                                setSessionExercises((prev) => {
+                                  const newExercises = prev.map((ex) => ({
+                                    ...ex,
+                                    actualSets: [...ex.actualSets],
+                                  }));
+                                  const target = newExercises[exerciseIndex];
+                                  if (!target) return prev;
+                                  target.actualSets.splice(setIndex, 1);
+                                  target.actualSets = target.actualSets.map(
                                     (s, idx) => ({
                                       ...s,
                                       setNumber: idx + 1,
                                     })
                                   );
-                                setSessionExercises(newExercises);
+                                  return newExercises;
+                                });
                                 toastDebug(`Set removed from ${exercise.name}`);
                                 setRemovingSet(null);
                               }, 300);

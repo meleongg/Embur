@@ -199,7 +199,7 @@ export default function SessionsPage() {
   if (error) {
     return (
       <div className="p-4">
-        <PageTitle title="Session History" />
+        <PageTitle title="Workout History" />
         <div className="bg-red-100 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
           <p className="text-red-700 dark:text-red-300">{error}</p>
         </div>

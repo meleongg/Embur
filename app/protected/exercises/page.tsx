@@ -171,7 +171,13 @@ export default function ExerciseLibraryPage() {
       }
 
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.exercises.list(),
+        queryKey: queryKeys.exercises.all,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.workouts.all,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.analytics.all,
       });
       onClose();
     } catch (error) {
@@ -219,7 +225,16 @@ export default function ExerciseLibraryPage() {
       }
 
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.exercises.list(),
+        queryKey: queryKeys.exercises.all,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.workouts.all,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.analytics.all,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.sessions.all,
       });
 
       toast.success(`${exerciseToDelete.name} deleted`);
