@@ -47,7 +47,7 @@ const Actions = ({ id, workoutName }: { id: string; workoutName: string }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
   const supabase = createClient();
-  const { activeSession } = useSession();
+  const { activeSession, isHydrated } = useSession();
   const [showWarning, setShowWarning] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -57,7 +57,17 @@ const Actions = ({ id, workoutName }: { id: string; workoutName: string }) => {
       // Show loading toast
       const toastId = toast.loading(`Deleting ${workoutName}...`);
 
-      await supabase.from("workouts").delete().eq("id", workoutId);
+      const { error } = await supabase
+        .from("workouts")
+        .delete()
+        .eq("id", workoutId);
+
+      if (error) {
+        toast.dismiss(toastId);
+        toast.error(`Failed to delete ${workoutName}`);
+        console.error("Error deleting workout:", error);
+        return;
+      }
 
       await queryClient.invalidateQueries({
         queryKey: queryKeys.workouts.all,
@@ -115,12 +125,14 @@ const Actions = ({ id, workoutName }: { id: string; workoutName: string }) => {
           <DropdownItem
             key="start"
             onPress={() => {
+              if (!isHydrated) return;
               if (activeSession?.workoutId) {
                 setShowWarning(true);
               } else {
                 router.push(`/protected/workouts/${id}/session`);
               }
             }}
+            isDisabled={!isHydrated}
           >
             Start Workout
           </DropdownItem>

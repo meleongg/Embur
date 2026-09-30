@@ -154,3 +154,38 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
+
+export const deleteAccountAction = async (): Promise<
+  { success: true } | { error: string }
+> => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { error: "Not authenticated" };
+  }
+
+  let admin;
+  try {
+    const { createAdminClient } = await import("@/utils/supabase/admin");
+    admin = createAdminClient();
+  } catch {
+    return {
+      error:
+        "Account deletion is not configured on the server. Please contact support.",
+    };
+  }
+
+  // Delete the auth user via service role. Related rows should cascade via FKs;
+  // do not delete preferences first from the client (that left orphaned state).
+  const { error } = await admin.auth.admin.deleteUser(user.id);
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase.auth.signOut();
+  return { success: true };
+};

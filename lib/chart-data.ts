@@ -23,6 +23,14 @@ type SessionRow = {
   session?: { started_at?: string } | { started_at?: string }[] | null;
 };
 
+function toLocalDateKey(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
@@ -40,7 +48,7 @@ function getBucketKey(dateStr: string, bucket: ChartBucket): string {
   }
 
   if (bucket === "week") {
-    return startOfWeek(date).toISOString().split("T")[0];
+    return toLocalDateKey(startOfWeek(date));
   }
 
   return dateStr;
@@ -133,7 +141,7 @@ export function buildExerciseChartData(
       : session.session?.started_at;
     if (!startedAt) return;
 
-    const date = new Date(startedAt).toISOString().split("T")[0];
+    const date = toLocalDateKey(startedAt);
     if (!groupedByDate[date]) {
       groupedByDate[date] = [];
     }
@@ -144,6 +152,7 @@ export function buildExerciseChartData(
   if (timeframe !== "all") {
     const now = new Date();
     const cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
 
     if (timeframe === "week") {
       cutoff.setDate(now.getDate() - 7);
@@ -155,7 +164,9 @@ export function buildExerciseChartData(
       cutoff.setFullYear(now.getFullYear() - 1);
     }
 
-    filteredDates = filteredDates.filter((date) => new Date(date) >= cutoff);
+    filteredDates = filteredDates.filter(
+      (date) => new Date(`${date}T00:00:00`) >= cutoff
+    );
   }
 
   const bucket = chooseChartBucket(filteredDates.length, timeframe);

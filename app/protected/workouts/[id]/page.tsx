@@ -53,7 +53,7 @@ export default function ViewWorkout() {
   const router = useRouter();
   const params = useParams();
   const workoutId = params.id as string;
-  const { activeSession } = useSession();
+  const { activeSession, isHydrated } = useSession();
   const { useMetric, defaultRestTimer } = useUnitPreference();
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [selectedTab, setSelectedTab] = useState("exercises");
@@ -115,6 +115,7 @@ export default function ViewWorkout() {
   }, {} as CategoryExercises);
 
   const startWorkout = () => {
+    if (!isHydrated) return;
     if (activeSession?.workoutId) {
       setShowSessionWarning(true);
     } else {
@@ -201,6 +202,7 @@ export default function ViewWorkout() {
           <Button
             color="success"
             onPress={startWorkout}
+            isDisabled={!isHydrated}
             startContent={<Play className="h-4 w-4" />}
           >
             Start Workout
@@ -463,7 +465,12 @@ export default function ViewWorkout() {
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
                   <HistoryIcon className="w-10 h-10" />
                   <p>No workout history yet</p>
-                  <Button color="primary" size="sm" onPress={startWorkout}>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    onPress={startWorkout}
+                    isDisabled={!isHydrated}
+                  >
                     Start First Workout
                   </Button>
                 </div>

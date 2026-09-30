@@ -9,11 +9,20 @@ const withPWA = require("next-pwa")({
     document: "/_offline",
   },
   runtimeCaching: [
+    // Same-origin static assets only — never cache Supabase or other API hosts
     {
-      urlPattern: /^https?.*/,
-      handler: "NetworkFirst",
+      urlPattern: ({
+        request,
+        sameOrigin,
+      }: {
+        request: Request;
+        sameOrigin: boolean;
+      }) =>
+        sameOrigin &&
+        ["style", "script", "image", "font"].includes(request.destination),
+      handler: "CacheFirst",
       options: {
-        cacheName: "offlineCache",
+        cacheName: "static-assets",
         expiration: {
           maxEntries: 200,
           maxAgeSeconds: 24 * 60 * 60,
@@ -21,23 +30,14 @@ const withPWA = require("next-pwa")({
       },
     },
     {
-      urlPattern: /\/api\/workouts/,
-      handler: "StaleWhileRevalidate",
-      options: {
-        cacheName: "workout-data",
-        expiration: {
-          maxEntries: 32,
-          maxAgeSeconds: 24 * 60 * 60,
-        },
-      },
-    },
-    {
-      urlPattern: /\/api\/sessions/,
+      urlPattern: ({ sameOrigin, url }: { sameOrigin: boolean; url: URL }) =>
+        sameOrigin && !url.pathname.startsWith("/api/"),
       handler: "NetworkFirst",
       options: {
-        cacheName: "session-data",
+        cacheName: "same-origin-pages",
+        networkTimeoutSeconds: 10,
         expiration: {
-          maxEntries: 32,
+          maxEntries: 64,
           maxAgeSeconds: 24 * 60 * 60,
         },
       },

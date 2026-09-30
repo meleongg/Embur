@@ -9,7 +9,8 @@ export function useUnitPreference() {
   });
 
   return {
-    useMetric: data?.use_metric ?? true,
+    // Match signup default (imperial / lbs) while preferences load
+    useMetric: data?.use_metric ?? false,
     defaultRestTimer: data?.default_rest_timer ?? 60,
     useDarkMode: data?.use_dark_mode ?? false,
     isLoading,

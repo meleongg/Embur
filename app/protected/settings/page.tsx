@@ -39,9 +39,9 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
-// Default user preferences
+// Default user preferences (aligned with signup defaults in app/actions.ts)
 const DEFAULT_PREFERENCES = {
-  useMetric: true,
+  useMetric: false,
   useDarkMode: false,
   defaultRestTimer: 60, // seconds
 };
@@ -400,7 +400,7 @@ export default function SettingsPage() {
     }
   };
 
-  // Delete account
+  // Delete account via server action (service role) — never call auth.admin from the browser
   const deleteAccount = async () => {
     try {
       if (deleteConfirm !== userProfile.email) {
@@ -410,19 +410,16 @@ export default function SettingsPage() {
 
       const toastId = toast.loading("Deleting your account...");
 
-      // Delete user data first
-      await supabase
-        .from("user_preferences")
-        .delete()
-        .eq("user_id", userProfile.id);
+      const { deleteAccountAction } = await import("@/app/actions");
+      const result = await deleteAccountAction();
 
-      // Delete the user account
-      const { error } = await supabase.auth.admin.deleteUser(userProfile.id);
-
-      if (error) throw error;
-
-      // Sign out after deletion
-      await supabase.auth.signOut();
+      if ("error" in result) {
+        toast.error("Failed to delete account", {
+          id: toastId,
+          description: result.error,
+        });
+        return;
+      }
 
       toast.success("Account deleted successfully", {
         id: toastId,
