@@ -440,14 +440,16 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 pb-16 space-y-6 w-full max-w-5xl mx-auto min-w-[320px]">
-        <div className="h-8 w-32 bg-muted rounded animate-pulse mb-6" />
+      <div className="p-4 md:p-6 pb-16 space-y-6 w-full min-w-0 max-w-5xl mx-auto">
+        <div className="mb-6 flex w-full min-w-0 items-center justify-between gap-3">
+          <div className="h-8 w-32 max-w-full bg-muted rounded animate-pulse" />
+        </div>
 
         {/* Tab skeleton */}
-        <div className="border-b border-divider w-full">
+        <div className="border-b border-divider w-full min-w-0 overflow-x-auto">
           <div className="flex gap-4 mb-2">
-            <div className="h-10 w-28 bg-muted rounded animate-pulse" />
-            <div className="h-10 w-28 bg-muted rounded animate-pulse opacity-60" />
+            <div className="h-10 w-28 shrink-0 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-28 shrink-0 bg-muted rounded animate-pulse opacity-60" />
           </div>
           <div className="h-0.5 w-28 bg-primary rounded-full mb-[-1px]" />
         </div>
@@ -518,7 +520,7 @@ export default function SettingsPage() {
 
   // Enhanced Settings Page with better responsiveness
   return (
-    <div className="p-4 md:p-6 pb-16 space-y-6 w-full max-w-5xl mx-auto min-w-[320px] animate-fadeIn">
+    <div className="p-4 md:p-6 pb-16 space-y-6 w-full min-w-0 max-w-5xl mx-auto animate-fadeIn">
       <PageTitle title="Settings" showSettingsButton={false} />
 
       {/* Enhanced tabs with better mobile appearance */}

@@ -390,15 +390,15 @@ export default function WorkoutsPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(pageSize)].map((_, i) => (
-              <Card key={i} className="w-full p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="space-y-2 w-full">
+              <Card key={i} className="w-full min-w-0 overflow-hidden p-4">
+                <div className="mb-3 flex min-w-0 items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <Skeleton className="h-6 w-3/4 rounded-lg" />
                     <Skeleton className="h-4 w-full rounded-lg" />
                   </div>
-                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
                 </div>
-                <div className="flex items-center gap-2 mt-3">
+                <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2">
                   <Skeleton className="h-6 w-24 rounded-full" />
                   <Skeleton className="h-6 w-24 rounded-full" />
                 </div>

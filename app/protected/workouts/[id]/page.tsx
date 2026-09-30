@@ -125,17 +125,20 @@ export default function ViewWorkout() {
 
   if (isLoading) {
     return (
-      <div className="p-4 flex flex-col gap-4">
-        <Skeleton className="h-12 w-2/3 rounded-lg mb-4" />
+      <div className="p-4 flex flex-col gap-4 min-w-0 overflow-x-hidden">
+        <div className="mb-4 flex w-full min-w-0 items-center justify-between gap-3">
+          <Skeleton className="h-12 w-2/3 max-w-full rounded-lg" />
+          <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+        </div>
 
-        <div className="flex gap-3 mb-6">
+        <div className="mb-6 flex min-w-0 flex-wrap gap-3">
           <Skeleton className="h-10 w-32 rounded-lg" />
           <Skeleton className="h-10 w-32 rounded-lg" />
         </div>
 
         <Skeleton className="h-32 w-full rounded-lg mb-6" />
 
-        <Skeleton className="h-8 w-40 rounded-lg mb-4" />
+        <Skeleton className="h-8 w-40 max-w-full rounded-lg mb-4" />
 
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-16 w-full rounded-lg mb-2" />
