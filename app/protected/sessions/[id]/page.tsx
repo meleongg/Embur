@@ -124,50 +124,50 @@ export default function ViewSession() {
   // Loading Skeletons
   if (isLoading || isLoadingUnits) {
     return (
-      <div className="pb-16 animate-fadeIn">
-        <div className="mb-6">
-          <Skeleton className="h-9 w-48 rounded-lg mb-4" />
-          <Skeleton className="h-8 w-10 rounded-lg" />
+      <div className="pb-16 animate-fadeIn min-w-0 overflow-x-hidden">
+        <div className="mb-6 flex w-full min-w-0 items-center justify-between gap-3">
+          <Skeleton className="h-9 w-48 max-w-[70%] rounded-lg" />
+          <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
         </div>
 
         {/* Session Details Card Skeleton */}
-        <Card className="mb-8">
+        <Card className="mb-8 min-w-0 overflow-hidden">
           <CardHeader>
-            <Skeleton className="h-7 w-40 rounded-lg" />
+            <Skeleton className="h-7 w-40 max-w-full rounded-lg" />
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="flex-1">
-                    <Skeleton className="h-4 w-20 rounded mb-2" />
-                    <Skeleton className="h-5 w-32 rounded" />
+                <div key={i} className="flex min-w-0 items-center gap-2">
+                  <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+                  <div className="min-w-0 flex-1">
+                    <Skeleton className="h-4 w-20 max-w-full rounded mb-2" />
+                    <Skeleton className="h-5 w-32 max-w-full rounded" />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-4">
-              <Skeleton className="h-4 w-48 rounded mb-2" />
-              <Skeleton className="h-4 w-48 rounded" />
+            <div className="mt-4 min-w-0">
+              <Skeleton className="h-4 w-48 max-w-full rounded mb-2" />
+              <Skeleton className="h-4 w-48 max-w-full rounded" />
             </div>
           </CardBody>
         </Card>
 
-        <Skeleton className="h-7 w-40 rounded-lg mb-4" />
+        <Skeleton className="h-7 w-40 max-w-full rounded-lg mb-4" />
 
         {/* Exercise Cards Skeletons */}
         {[...Array(3)].map((_, i) => (
-          <Card key={i} className="mb-4">
+          <Card key={i} className="mb-4 min-w-0 overflow-hidden">
             <CardHeader>
-              <div className="w-full flex justify-between">
-                <Skeleton className="h-6 w-40 rounded mb-1" />
-                <Skeleton className="h-5 w-16 rounded" />
+              <div className="flex w-full min-w-0 items-center justify-between gap-2">
+                <Skeleton className="h-6 w-40 max-w-[70%] rounded mb-1" />
+                <Skeleton className="h-5 w-16 shrink-0 rounded" />
               </div>
             </CardHeader>
-            <CardBody>
-              <div className="flex justify-between mb-3">
+            <CardBody className="min-w-0 overflow-x-auto">
+              <div className="mb-3 flex justify-between gap-2">
                 <Skeleton className="h-4 w-10 rounded" />
                 <Skeleton className="h-4 w-10 rounded" />
                 <Skeleton className="h-4 w-10 rounded" />

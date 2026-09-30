@@ -1092,8 +1092,11 @@ export default function WorkoutSession() {
   if (isLoading) {
     return (
       <div className="w-full max-w-full overflow-x-hidden px-4 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-48 rounded-lg" /> {/* Page title */}
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-10 w-48 max-w-[70%] rounded-lg" />{" "}
+          {/* Page title */}
+          <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />{" "}
+          {/* Settings */}
         </div>
 
         <div className="flex items-center mt-4">
@@ -1101,10 +1104,12 @@ export default function WorkoutSession() {
         </div>
 
         {/* Workout heading skeleton */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 my-6">
-          <Skeleton className="h-8 w-64 rounded-lg" /> {/* Workout title */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 my-6 min-w-0">
+          <Skeleton className="h-8 w-64 max-w-full rounded-lg" />{" "}
+          {/* Workout title */}
           <div className="flex gap-2 items-center">
-            <Skeleton className="h-6 w-32 rounded-full" /> {/* Set stats */}
+            <Skeleton className="h-6 w-32 max-w-full rounded-full" />{" "}
+            {/* Set stats */}
           </div>
         </div>
 
@@ -1125,8 +1130,9 @@ export default function WorkoutSession() {
           {/* Description label */}
           <Skeleton className="h-16 w-full rounded-lg" />{" "}
           {/* Description text */}
-          <div className="flex justify-between items-center mt-4">
-            <Skeleton className="h-4 w-48 rounded-md" /> {/* Session started */}
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Skeleton className="h-4 w-48 max-w-full rounded-md" />{" "}
+            {/* Session started */}
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 w-4 rounded-full" /> {/* Clock icon */}
               <Skeleton className="h-4 w-16 rounded-md" />{" "}
@@ -1141,17 +1147,17 @@ export default function WorkoutSession() {
             key={i}
             className="bg-default-50 dark:bg-default-100 p-4 rounded-lg shadow-sm border border-default-200 mb-6"
           >
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-              <div className="flex items-center gap-2">
+            <div className="mb-4 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <div className="flex flex-col gap-1">
                   <Skeleton className="h-8 w-8 rounded-lg" /> {/* Up button */}
                   <Skeleton className="h-8 w-8 rounded-lg" />{" "}
                   {/* Down button */}
                 </div>
-                <Skeleton className="h-7 w-48 rounded-lg" />{" "}
+                <Skeleton className="h-7 w-48 max-w-full rounded-lg" />{" "}
                 {/* Exercise name */}
                 {/* Progress indicator */}
-                <div className="ml-2 flex items-center gap-2">
+                <div className="ml-0 flex items-center gap-2 sm:ml-2">
                   <Skeleton className="h-1.5 w-16 rounded-full" />
                   <Skeleton className="h-4 w-10 rounded-md" />
                 </div>

@@ -532,16 +532,17 @@ export default function EditWorkout() {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-6 min-w-0 overflow-x-hidden">
         <ActiveSessionBanner />
 
         {/* Page title skeleton */}
-        <div className="flex flex-col gap-4">
-          <Skeleton className="h-12 w-2/3 rounded-lg mb-2" />
-          <Skeleton className="h-4 w-40 rounded-lg" />
+        <div className="flex w-full min-w-0 items-center justify-between gap-3">
+          <Skeleton className="h-12 w-2/3 max-w-full rounded-lg" />
+          <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
         </div>
+        <Skeleton className="h-4 w-40 max-w-full rounded-lg" />
 
-        <div className="max-w-md sm:max-w-lg md:max-w-2xl space-y-6">
+        <div className="max-w-md sm:max-w-lg md:max-w-2xl space-y-6 min-w-0">
           {/* Name input skeleton */}
           <div className="space-y-2">
             <Skeleton className="h-5 w-16 rounded-lg" /> {/* Label */}
@@ -555,34 +556,36 @@ export default function EditWorkout() {
           </div>
 
           {/* Exercises section skeleton */}
-          <div className="space-y-3">
+          <div className="space-y-3 min-w-0">
             <Skeleton className="h-7 w-32 rounded-lg" /> {/* Section title */}
             {/* Exercise table skeleton */}
-            <div className="space-y-2">
-              {/* Table header */}
-              <div className="flex w-full justify-between p-2">
-                <Skeleton className="h-8 w-16 rounded-lg" />
-                <Skeleton className="h-8 w-[40%] rounded-lg" />
-                <Skeleton className="h-8 w-16 rounded-lg" />
-                <Skeleton className="h-8 w-16 rounded-lg" />
-                <Skeleton className="h-8 w-24 rounded-lg" />
-                <Skeleton className="h-8 w-16 rounded-lg" />
-              </div>
-
-              {/* Table rows */}
-              {[...Array(3)].map((_, index) => (
-                <div
-                  key={index}
-                  className="flex w-full justify-between items-center p-3 border-b"
-                >
-                  <Skeleton className="h-8 w-16 rounded-lg" />
-                  <Skeleton className="h-6 w-[40%] rounded-lg" />
-                  <Skeleton className="h-8 w-16 rounded-lg" />
-                  <Skeleton className="h-8 w-16 rounded-lg" />
-                  <Skeleton className="h-8 w-24 rounded-lg" />
-                  <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="min-w-0 overflow-x-auto">
+              <div className="min-w-[36rem] space-y-2">
+                {/* Table header */}
+                <div className="flex w-full justify-between gap-2 p-2">
+                  <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
+                  <Skeleton className="h-8 w-[40%] rounded-lg" />
+                  <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
+                  <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
+                  <Skeleton className="h-8 w-24 shrink-0 rounded-lg" />
+                  <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
                 </div>
-              ))}
+
+                {/* Table rows */}
+                {[...Array(3)].map((_, index) => (
+                  <div
+                    key={index}
+                    className="flex w-full items-center justify-between gap-2 border-b p-3"
+                  >
+                    <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
+                    <Skeleton className="h-6 w-[40%] rounded-lg" />
+                    <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
+                    <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
+                    <Skeleton className="h-8 w-24 shrink-0 rounded-lg" />
+                    <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -593,7 +596,7 @@ export default function EditWorkout() {
           </div>
 
           {/* Bottom buttons skeleton */}
-          <div className="flex gap-2 mt-4">
+          <div className="mt-4 flex min-w-0 flex-col gap-2 sm:flex-row">
             <Skeleton className="h-10 w-full max-w-xs rounded-lg" />
             <Skeleton className="h-10 w-24 rounded-lg" />
           </div>

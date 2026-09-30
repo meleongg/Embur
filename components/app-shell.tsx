@@ -114,8 +114,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col pb-24 lg:pb-8">
-        <div className="embur-app flex flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden pb-24 lg:pb-8">
+        <div className="embur-app flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {children}
         </div>
         <div className="lg:hidden">

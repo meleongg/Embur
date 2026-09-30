@@ -317,9 +317,9 @@ export default function AnalyticsPage() {
 
           {/* More realistic chart skeleton */}
           <Card className="shadow-sm">
-            <CardHeader className="pb-0 pt-4 flex-col items-start">
-              <Skeleton className="h-6 w-48 rounded mb-2 animate-pulse" />
-              <Skeleton className="h-4 w-72 rounded animate-pulse" />
+            <CardHeader className="pb-0 pt-4 flex-col items-start min-w-0">
+              <Skeleton className="h-6 w-48 max-w-full rounded mb-2 animate-pulse" />
+              <Skeleton className="h-4 w-72 max-w-full rounded animate-pulse" />
             </CardHeader>
             <Divider className="my-2" />
             <CardBody className="h-80">
@@ -487,10 +487,10 @@ export default function AnalyticsPage() {
                 isChartLoading ? (
                   // Better skeleton loading indication
                   <div className="space-y-8">
-                    <Card className="shadow-sm">
-                      <CardHeader className="pb-0 pt-4 flex-col items-start">
-                        <Skeleton className="h-6 w-48 rounded mb-2" />
-                        <Skeleton className="h-4 w-72 rounded" />
+                    <Card className="shadow-sm min-w-0 overflow-hidden">
+                      <CardHeader className="pb-0 pt-4 flex-col items-start min-w-0">
+                        <Skeleton className="h-6 w-48 max-w-full rounded mb-2" />
+                        <Skeleton className="h-4 w-72 max-w-full rounded" />
                       </CardHeader>
                       <Divider className="my-2" />
                       <CardBody className="h-[400px] md:h-80 flex items-center justify-center">
