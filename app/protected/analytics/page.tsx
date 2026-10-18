@@ -37,6 +37,7 @@ import {
   fetchAnalyticsSummary,
   fetchExerciseProgress,
   fetchVolumeLeaderboard,
+  type VolumeLeaderboardRow,
 } from "@/lib/queries/analytics";
 import { toast } from "@/lib/toast";
 import { useQuery } from "@tanstack/react-query";
@@ -62,13 +63,13 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 const EMPTY_LIST: never[] = [];
 
-function buildVolumeChartData(sessionsData: any[]) {
+function buildVolumeChartData(sessionsData: VolumeLeaderboardRow[]) {
   const volumeByExercise = sessionsData.reduce(
     (acc: { [key: string]: number }, session) => {
       const exerciseName = Array.isArray(session.exercise)
         ? session.exercise[0]?.name
         : session.exercise?.name;
-      const volume = session.reps * session.weight;
+      const volume = (session.reps ?? 0) * (session.weight ?? 0);
 
       if (!exerciseName) return acc;
 
@@ -160,7 +161,11 @@ export default function AnalyticsPage() {
     enabled: progressEnabled,
   });
 
-  const { data: volumeRows } = useQuery({
+  const {
+    data: volumeRows,
+    isLoading: isVolumeLoading,
+    isError: volumeError,
+  } = useQuery({
     queryKey: queryKeys.analytics.volumeLeaderboard(),
     queryFn: () => fetchVolumeLeaderboard(),
     enabled: activeTab === "volume",
@@ -177,6 +182,12 @@ export default function AnalyticsPage() {
       toast.error("Failed to load exercise progress");
     }
   }, [progressError]);
+
+  useEffect(() => {
+    if (volumeError) {
+      toast.error("Failed to load volume analysis");
+    }
+  }, [volumeError]);
 
   const progressChart = useMemo(() => {
     if (
@@ -931,7 +942,11 @@ export default function AnalyticsPage() {
                 </CardHeader>
                 <Divider className="my-2" />
                 <CardBody className="h-[500px] md:h-96">
-                  {volumeData.length > 0 ? (
+                  {isVolumeLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <Spinner label="Loading volume analysis..." />
+                    </div>
+                  ) : volumeData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={volumeData}
