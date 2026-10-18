@@ -101,8 +101,16 @@ export async function fetchExerciseProgress(
   return (data ?? []) as unknown as ExerciseProgressRow[];
 }
 
-/** Top exercises by total volume — uses a bounded recent fetch */
-export async function fetchVolumeLeaderboard(limit = 500) {
+export type VolumeLeaderboardRow = {
+  reps: number | null;
+  weight: number | null;
+  exercise: { name?: string } | { name?: string }[] | null;
+};
+
+/** Top exercises by total volume across every logged set. */
+export async function fetchVolumeLeaderboard(): Promise<
+  VolumeLeaderboardRow[]
+> {
   const supabase = createClient();
   const {
     data: { user },
@@ -110,18 +118,29 @@ export async function fetchVolumeLeaderboard(limit = 500) {
 
   if (!user) throw new Error("Not authenticated");
 
-  const { data, error } = await supabase
-    .from("session_exercises")
-    .select(
-      `
-      reps, weight,
-      exercise:exercises(name)
-    `
-    )
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  // `session_exercises` has no application-wide created-at contract. Fetch in
+  // pages instead so the result matches the UI's “all sessions” description,
+  // regardless of how many sets the user has logged.
+  const pageSize = 1_000;
+  const rows: VolumeLeaderboardRow[] = [];
 
-  if (error) throw error;
-  return data ?? [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("session_exercises")
+      .select(
+        `
+        reps, weight,
+        exercise:exercises(name)
+      `
+      )
+      .eq("user_id", user.id)
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+
+    const page = (data ?? []) as VolumeLeaderboardRow[];
+    rows.push(...page);
+
+    if (page.length < pageSize) return rows;
+  }
 }

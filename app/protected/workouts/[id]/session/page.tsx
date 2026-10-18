@@ -830,6 +830,11 @@ export default function WorkoutSession() {
         sessionExercises
       );
 
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.analytics.all }),
+      ]);
+
       // After successful session submission
       await endSession();
       console.log("endSession called from finalizeSession");
