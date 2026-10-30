@@ -23,14 +23,22 @@ export const roundTo = (value: number, decimals: number): number => {
   return Math.round(value * factor) / factor;
 };
 
+// Kg is stored to 4 decimal places, so a pounds round-trip drifts by about
+// 0.0001 lb. Snap only that dust. A wider window (the old 0.5 lb tolerance)
+// rewrites intentional entries such as 10.5 lb down to 10.
+const SNAP_TOLERANCE_LBS = 0.05;
+
 /**
  * Snap a weight to the nearest common lbs value if within tolerance
  * This helps recover the original lbs value after kg round-trip
  * @param lbs Weight in pounds
- * @param tolerance How close (in lbs) to snap (default 0.5)
+ * @param tolerance How close (in lbs) to snap (default 0.05)
  * @returns Snapped weight or original if no match
  */
-const snapToCommonWeight = (lbs: number, tolerance: number = 0.5): number => {
+const snapToCommonWeight = (
+  lbs: number,
+  tolerance: number = SNAP_TOLERANCE_LBS
+): number => {
   for (const common of COMMON_LBS_WEIGHTS) {
     if (Math.abs(lbs - common) <= tolerance) {
       return common;
